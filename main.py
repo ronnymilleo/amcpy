@@ -1,5 +1,6 @@
 import numpy as np
 
+import features
 import functions
 
 print("Tests")
@@ -17,3 +18,5 @@ print(functions.instantaneous_absolute(var))
 print(functions.instantaneous_cn_absolute(var))
 print(functions.instantaneous_phase(var))
 print(functions.instantaneous_frequency(var))
+
+print(features.calculate_features())
