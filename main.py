@@ -1,15 +1,19 @@
-from functions import gmax, mean, std, meanofsquared
 import numpy as np
+
+import functions
 
 print("Tests")
 
-var = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
-x = gmax(var)
-y = mean(var)
-z = std(var)
-a = meanofsquared(var)
+var = np.array([0, -1, 2, -3, 4, -5, 6, -7, 8, -9])
 
-print(x)
-print(y)
-print(z)
-print(a)
+print(functions.mean(var))
+print(functions.std_deviation(var))
+
+print(functions.gmax(var))
+print(functions.mean_of_squared(var))
+print(functions.kurtosis(var))
+
+print(functions.instantaneous_absolute(var))
+print(functions.instantaneous_cn_absolute(var))
+print(functions.instantaneous_phase(var))
+print(functions.instantaneous_frequency(var))
