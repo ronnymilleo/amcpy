@@ -1,8 +1,14 @@
-num1 = 15
-num2 = 12
+from functions import gmax, mean, std, meanofsquared
 
-# Adding two nos
-sum = num1 + num2
+print("Tests")
 
-# printing values
-print("Sum of {0} and {1} is {2}".format(num1, num2, sum))
+n = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+x = gmax(n)
+y = mean(n)
+z = std(n)
+a = meanofsquared(n)
+
+print(x)
+print(y)
+print(z)
+print(a)
