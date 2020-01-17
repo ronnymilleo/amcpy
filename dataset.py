@@ -5,10 +5,11 @@ import matplotlib.pyplot as plt
 import pickle
 
 dataset = "/home/Adenilson.Castro/dataset/GOLD_XYZ_OSC.0001_1024.hdf5"
+datasetRonny = "C:\\Users\\ronny\\Dataset\\GOLD_XYZ_OSC.0001_1024.hdf5"
 
 #Extract the datasets from the hdf5 file
 #X=I/Q Modulation data - Y=Modulation - Z=SNR
-with h5py.File(dataset, "r") as f:
+with h5py.File(datasetRonny, "r") as f:
     print("Keys: %s" %f.keys())
     print("Values: %s" %f.values())
     print("Names: %s" %f.name)
