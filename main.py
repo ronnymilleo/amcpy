@@ -1,22 +1,29 @@
+import pickle
+import matplotlib.pyplot as plt
 import numpy as np
+import features as ft
 
-import features
-import functions
+#Load the pickle file
+with open('16qam.pickle', 'rb') as handle:
+    data = pickle.load(handle)
 
-print("Tests")
+var = np.zeros(len(data), dtype=np.complex)
 
-var = np.array([0, -1, 2, -3, 4, -5, 6, -7, 8, -9])
+for i in range(len(data[:])):
+    var[i] = (complex(data[i][0], data[i][1]))
 
-print(functions.mean(var))
-print(functions.std_deviation(var))
+plt.plot(var.real)
+plt.plot(var.imag)
+plt.show()
 
-print(functions.gmax(var))
-print(functions.mean_of_squared(var))
-print(functions.kurtosis(var))
+features = ft.calculate_features(var)
 
-print(functions.instantaneous_absolute(var))
-print(functions.instantaneous_cn_absolute(var))
-print(functions.instantaneous_phase(var))
-print(functions.instantaneous_frequency(var))
-
-print(features.calculate_features())
+print('Desvio padrão do valor absoluto da componente não-linear da fase instantânea: ' + str(features[0]))
+print('Desvio padrão do valor direto da componente não-linear da fase instantânea: ' + str(features[1]))
+print('Desvio padrão do valor absoluto da componente não-linear da frequência instantânea: ' + str(features[2]))
+print('Desvio padrão do valor direto da componente não-linear da frequência instantânea: ' + str(features[3]))
+print('Curtose: ' + str(features[4]))
+print('Valor máximo da DEP da amplitude instantânea normalizada e centralizada: ' + str(features[5]))
+print('Média da amplitude instantânea normalizada centralizada ao quadrado: ' + str(features[6]))
+print('Desvio padrão do valor absoluto da amplitude instantânea normalizada e centralizada: ' + str(features[7]))
+print('Desvio padrão da amplitude instantânea normalizada e centralizada: ' + str(features[8]))
