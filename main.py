@@ -11,7 +11,7 @@ number_of_frames = 100
 number_of_features = 9
 
 # Load the pickle file
-with open('16QAM_SNR0dB.pickle', 'rb') as handle:
+with open('\\data\\QPSK_ALL_SNR.pickle', 'rb') as handle:
     data = pickle.load(handle)
 
 # Quick code to separate frames

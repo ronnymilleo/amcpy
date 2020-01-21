@@ -39,41 +39,30 @@ while (modulation < 1) or (modulation > 24):
 modulation_end = classes[modulation - 1][1] * 106496
 modulation_start = modulation_end - 106496
 
-# SNR dB select
-modulationSNR = int(input('Enter modulation SNR, only pairs are valid (-20 ... 30): '))
-while (modulationSNR % 2) or (modulation < -20) or (modulation > 30) != 0:
-    modulationSNR = int(input('Try again: enter modulation SNR, only pairs are valid (-20 ... 30): '))
-
-# Modulation SNR start and end config (default = 4096 frames)
-SNR_end = modulation_start + (modulationSNR // 2 + 11) * 4096
-SNR_start = SNR_end - 4096
-
-# Extract the dataset from the hdf5 file
-# X=I/Q Modulation data - Y=Modulation - Z=SNR
-with h5py.File(datasetRonny, "r") as f:
-    print("Keys: %s" % f.keys())
-    print("Values: %s" % f.values())
-    print("Names: %s" % f.name)
-    keys = list(f.keys())
-
-    dset_X = f['X']
-    data_X = dset_X[SNR_start:SNR_end]  # Extract 4096 frames from 16QAM with 10dB of SNR
-
-    dset_Y = f['Y']
-    dset_Z = f['Z']
-
 temp = []
-for sample in range(len(data_X)):
-    for idx in range(len(data_X[sample])):
-        temp.append(data_X[sample][idx])
+
+for modulationSNR in range(-20, 32, 2):
+    # Modulation SNR start and end config (default = 4096 frames)
+    SNR_end = modulation_start + (modulationSNR // 2 + 11) * 4096
+    SNR_start = SNR_end - 4096
+
+    # Extract the dataset from the hdf5 file
+    # X=I/Q Modulation data - Y=Modulation - Z=SNR
+    with h5py.File(datasetRonny, "r") as f:
+        print("Keys: %s" % f.keys())
+        print("Values: %s" % f.values())
+        print("Names: %s" % f.name)
+        keys = list(f.keys())
+        dset_X = f['X']
+        data_X = dset_X[SNR_start:SNR_end]  # Extract 4096 frames from one SNR
+        dset_Y = f['Y']
+        dset_Z = f['Z']
+
+    temp.append(data_X)  # Append frames of every SNR
 
 # Create file name
-name = classes[modulation - 1][0] + '_SNR' + str(modulationSNR) + 'dB' + '.pickle'
+name = classes[modulation - 1][0] + '_ALL_SNR.pickle'
 
 # Save the samples ina pickle file
-with open(name, 'wb') as handle:
+with open('C:\\Users\\ronny\\PycharmProjects\\amcpy\\data\\' + name, 'wb') as handle:
     pickle.dump(temp, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-# Load the pickle file
-with open(name, 'rb') as handle:
-    data = pickle.load(handle)
