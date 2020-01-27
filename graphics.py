@@ -56,26 +56,21 @@ for modulation_number in range(len(modulations)):
                 snr_array[i, j, k] = var[i]
 
     for n in range(number_of_features):
-        plt.figure(num=n, figsize=(6.4, 3.6), dpi=200, facecolor='w', edgecolor='k')
-        # plt.subplot(1, 2, 1)
-        # plt.plot(snr_array[:, :, n], features[:, :, n])
-        plt.fill_between(snr_array[:, 0, 0],
-                         min_features[:, 0, n],
-                         max_features[:, 0, n],
-                         alpha=0.2)
-        # plt.xlabel('SNR')
-        # plt.ylabel('Value')
-        # plt.subplot(1, 2, 2)
-        # plt.plot(snr_array[:, :, n], features[:, :, n])
-        plt.errorbar(snr_array[:, 0, 0],
-                     mean_features[:, 0, n],
-                     yerr=[mean_features[:, 0, n] - min_features[:, 0, n],
-                           max_features[:, 0, n] - mean_features[:, 0, n]],
-                     uplims=True,
-                     lolims=True)
+        plt.figure(num=n, figsize=(6.4, 3.6), dpi=250, facecolor='w', edgecolor='k')
+        plt.plot(snr_array[:, :, n], mean_features[:, :, n], linewidth=1.0)
+        # plt.fill_between(snr_array[:, 0, 0],
+        #                  min_features[:, 0, n],
+        #                  max_features[:, 0, n],
+        #                  alpha=0.2)
+        # plt.errorbar(snr_array[:, 0, 0],
+        #              mean_features[:, 0, n],
+        #              yerr=[mean_features[:, 0, n] - min_features[:, 0, n],
+        #                    max_features[:, 0, n] - mean_features[:, 0, n]],
+        #              uplims=True,
+        #              lolims=True)
         plt.xlabel('SNR')
         plt.ylabel('Value')
-        # plt.show()
+        plt.legend(('8PSK', '16PSK', '16QAM', '64QAM', '256QAM', 'BPSK', 'QPSK'))
         figure_name = 'C:\\Users\\ronny\\PycharmProjects\\amcpy\\figures\\all_modulations_feature_' + \
                       str(n) + \
                       '.png'
