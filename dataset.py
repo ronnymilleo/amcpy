@@ -3,7 +3,7 @@ import pickle
 import h5py
 
 dataset = "/home/Adenilson.Castro/dataset/GOLD_XYZ_OSC.0001_1024.hdf5"
-datasetRonny = "C:\\Users\\ronny\\Dataset\\GOLD_XYZ_OSC.0001_1024.hdf5"
+datasetRonny = "F:\\2018.01\\GOLD_XYZ_OSC.0001_1024.hdf5"
 
 classes = [('32PSK', 1),
            ('16APSK', 2),
@@ -32,36 +32,30 @@ classes = [('32PSK', 1),
 
 # Choose modulation
 modulation = int(input('Enter modulation number (1 ... 24): '))
+print('Modulation = ' + classes[modulation - 1][0])
 while (modulation < 1) or (modulation > 24):
     modulation = int(input('Try again: enter modulation number (1 ... 24): '))
 
 # Start and end of each modulation
 modulation_end = classes[modulation - 1][1] * 106496
 modulation_start = modulation_end - 106496
-
+print('Modulation start on dataset = {0}'.format(modulation_start))
+print('Modulation end on dataset = {0}'.format(modulation_end))
 temp = []
+# Extract the dataset from the hdf5 file
+# X=I/Q Modulation data - Y=Modulation - Z=SNR
+with h5py.File(datasetRonny, "r") as f:
+    print("Keys: %s" % f.keys())
+    print("Values: %s" % f.values())
+    print("Names: %s" % f.name)
+    keys = list(f.keys())
+    dataset_X = f['X']
+    data_X = dataset_X[modulation_start:modulation_end]  # Extract 4096 frames from one SNR
 
-for modulationSNR in range(-20, 32, 2):
-    # Modulation SNR start and end config (default = 4096 frames)
-    SNR_end = modulation_start + (modulationSNR // 2 + 11) * 4096
-    SNR_start = SNR_end - 4096
-
-    # Extract the dataset from the hdf5 file
-    # X=I/Q Modulation data - Y=Modulation - Z=SNR
-    with h5py.File(datasetRonny, "r") as f:
-        print("Keys: %s" % f.keys())
-        print("Values: %s" % f.values())
-        print("Names: %s" % f.name)
-        keys = list(f.keys())
-        dset_X = f['X']
-        data_X = dset_X[SNR_start:SNR_end]  # Extract 4096 frames from one SNR
-        dset_Y = f['Y']
-        dset_Z = f['Z']
-
-    temp.append(data_X)  # Append frames of every SNR
+temp.append(data_X)  # Append frames of every SNR
 
 # Create file name
-name = classes[modulation - 1][0] + '_ALL_SNR.pickle'
+name = classes[modulation - 1][0] + '_RAW.pickle'
 
 # Save the samples ina pickle file
 with open('C:\\Users\\ronny\\PycharmProjects\\amcpy\\data\\' + name, 'wb') as handle:
