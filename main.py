@@ -1,58 +1,47 @@
 import pickle
 
-import matplotlib.pyplot as plt
 import numpy as np
 
 import features as ft
 
 # Config
 frame_size = 1024
-number_of_frames = 256
+number_of_frames = 4096
+number_of_snr = 26
 number_of_features = 9
-modulations = ['8PSK', '16PSK', '16QAM', '64QAM', '256QAM', 'BPSK', 'QPSK']
+modulations = ['BPSK', 'QPSK', 'OQPSK', '8PSK', '16PSK', '32PSK', '16QAM', '32QAM', '64QAM', '128QAM', '256QAM']
 
 for modulation_number in range(len(modulations)):
     pkl_file_name = 'C:\\Users\\ronny\\PycharmProjects\\amcpy\\data\\' + \
                     modulations[modulation_number] + \
-                    '_ALL_SNR.pickle'
+                    '_RAW.pickle'
 
     # Load the pickle file
     with open(pkl_file_name, 'rb') as handle:
         data = pickle.load(handle)
 
-    # Quick code to separate frames
-    signal = np.empty([len(data), number_of_frames, frame_size, 2])
-    for a in range(len(data)):
-        for b in range(number_of_frames):
-            signal[a, b, :, :] = data[a][b, :, :]
+    # Quick code to separate SNR
+    start = 0
+    end = 4096
+    signal = np.empty([number_of_snr, number_of_frames, frame_size, 2])
+    for snr in range(number_of_snr):
+        signal[snr, 0:4096, :, :] = data[0][start:end, :, :]
+        start += 4096
+        end += 4096
 
-    # Parse frames
-    frame = np.zeros((len(data), number_of_frames, frame_size), dtype=np.complex)
-    for snr in range(len(signal)):
-        for i in range(number_of_frames):
-            for j in range(frame_size):
-                frame[snr, i, j] = (complex(signal[snr, i, j, 0], signal[snr, i, j, 1]))  # complex(Real, Imaginary)
-
-    # Plot frame
-    plt.plot(frame[5, 0, 0:200].real)
-    plt.plot(frame[5, 0, 0:200].imag)
-    plt.show()
-    plt.plot(frame[15, 0, 0:200].real)
-    plt.plot(frame[15, 0, 0:200].imag)
-    plt.show()
-    plt.plot(frame[25, 0, 0:200].real)
-    plt.plot(frame[25, 0, 0:200].imag)
-    plt.show()
-
-    # Scatter plot
-    plt.scatter(frame[25, 0, 0:200].real, frame[25, 0, 0:200].imag)
-    plt.show()
+    # Parse signal
+    parsed_signal = np.zeros((number_of_snr, number_of_frames, frame_size), dtype=np.complex)
+    for snr in range(number_of_snr):
+        for frames in range(number_of_frames):
+            for samples in range(frame_size):
+                parsed_signal[snr, frames, samples] = (complex(signal[snr, frames, samples, 0],
+                                                               signal[snr, frames, samples, 1]))
 
     # Calculate features
-    features = np.zeros((len(frame), number_of_frames, number_of_features))
-    for i in range(len(features)):
-        for j in range(number_of_frames):
-            features[i, j, :] = ft.calculate_features(frame[i, j, :])
+    features = np.zeros((number_of_snr, number_of_frames, number_of_features))
+    for snr in range(number_of_snr):
+        for frames in range(number_of_frames):
+            features[snr, frames, :] = ft.calculate_features(parsed_signal[snr, frames, :])
 
     # Save the samples ina pickle file
     with open('C:\\Users\\ronny\\PycharmProjects\\amcpy\\data\\' +
