@@ -7,10 +7,10 @@ import features as ft
 
 # Config
 frame_size = 1024
-number_of_frames = 4096
+number_of_frames = 64
 number_of_snr = 26
 number_of_features = 9
-modulations = ['BPSK', 'QPSK', '8PSK', '16QAM', '64QAM', '256QAM']
+modulations = ['BPSK', 'QPSK', '16QAM']
 
 selection = int(input('Press 1 to load raw PKL or any other number to load raw MAT: '))
 
@@ -49,6 +49,7 @@ for modulation_number in range(len(modulations)):
         features = np.zeros((number_of_snr, number_of_frames, number_of_features))
         for snr in range(number_of_snr):
             for frames in range(number_of_frames):
+                print('Calculating for SNR = {0}'.format(snr))
                 features[snr, frames, :] = ft.calculate_features(parsed_signal[snr, frames, :])
         print('Features calculated...')
 
@@ -68,10 +69,7 @@ for modulation_number in range(len(modulations)):
         # Dictionary to access variable inside MAT file
         info = {'BPSK': 'pks2_signal',
                 'QPSK': 'pks4_signal',
-                '8PSK': 'pks8_signal',
-                '16QAM': 'qam16_signal',
-                '64QAM': 'qam64_signal',
-                '256QAM': 'qam256_signal'}
+                '16QAM': 'qam16_signal'}
 
         # Load MAT file
         data_mat = scipy.io.loadmat(mat_file_name)

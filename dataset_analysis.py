@@ -37,7 +37,7 @@ for modulation_number in range(len(modulations)):
         plt.xlabel('Amostras no tempo')
         plt.ylabel('Amplitude do sinal')
         plt.legend(['Real', 'Imag'])
-        plt.plot(signal[n, frame, 0:1024, 0:2])
+        plt.plot(signal[n, frame, 0:32, 0:2])
         figure_name = 'C:\\Users\\ronny\\PycharmProjects\\amcpy\\figures\\' \
                       + modulations[modulation_number] + '\\' \
                       + 'timedomain' + str(int(snr_array[n]))

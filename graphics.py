@@ -5,9 +5,9 @@ import numpy as np
 
 # Config
 frame_size = 1024
-number_of_frames = 256
+number_of_frames = 4096
 number_of_features = 9
-modulations = ['BPSK', 'QPSK', '8PSK', '16QAM', '64QAM', '256QAM']
+modulations = ['BPSK', 'QPSK', '16QAM']
 
 selection = int(input('Press 1 to load features from PKL or any other number to load features from MAT: '))
 
@@ -47,11 +47,8 @@ for modulation_number in range(len(modulations)):
     # Plot graphics
     for n in range(number_of_features):
         plt.figure(num=n, figsize=(6.4, 3.6), dpi=300)
-        if n == 5:
-            plt.semilogy(snr_array[:, n, n], mean_features[:, n, n], linewidth=1.0)
-        else:
-            plt.plot(snr_array[:, n, n], mean_features[:, n, n], linewidth=1.0)
-        plt.grid(True)
+        plt.plot(snr_array[:, n, n], mean_features[:, n, n], linewidth=1.0)
+        # plt.grid(True)
         # plt.fill_between(snr_array[:, 0, 0],
         #                  min_features[:, 0, n],
         #                  max_features[:, 0, n],
