@@ -1,7 +1,8 @@
 import pickle
-
 import matplotlib.pyplot as plt
 import numpy as np
+import pathlib
+from os.path import join
 
 # Config
 frame_size = 1024
@@ -14,13 +15,15 @@ selection = int(input('Press 1 to load features from PKL or any other number to 
 for modulation_number in range(len(modulations)):
     # Filename setup
     if selection == 1:
-        pkl_file_name = 'C:\\Users\\ronny\\PycharmProjects\\amcpy\\data\\' + \
-                        modulations[modulation_number] + \
-                        '_features_from_PKL.pickle'
+        pkl_file_name = pathlib.Path(join('../data', str(modulations[modulation_number]) + '_features_from_PKL.pickle'))
+        #pkl_file_name = 'C:\\Users\\ronny\\PycharmProjects\\amcpy\\data\\' + \
+        #                modulations[modulation_number] + \
+        #                '_features_from_PKL.pickle'
     else:
-        pkl_file_name = 'C:\\Users\\ronny\\PycharmProjects\\amcpy\\data\\' + \
-                        modulations[modulation_number] + \
-                        '_features_from_MAT.pickle'
+        pkl_file_name = pathlib.Path(join('../data', str(modulations[modulation_number]) + '_features_from_MAT.pickle'))
+        #pkl_file_name = 'C:\\Users\\ronny\\PycharmProjects\\amcpy\\data\\' + \
+        #                modulations[modulation_number] + \
+        #               '_features_from_MAT.pickle'
 
     # Load the pickle file
     with open(pkl_file_name, 'rb') as handle:
@@ -68,15 +71,17 @@ if selection == 1:
     # Save figures
     for n in range(number_of_features):
         plt.figure(num=n)
-        figure_name = 'C:\\Users\\ronny\\PycharmProjects\\amcpy\\figures\\features_from_PKL' + \
-                      str(n) + \
-                      '.png'
+        figure_name = pathlib.Path(join('../data/figures/features_from_PKL', str(n) + '.png'))
+        #figure_name = 'C:\\Users\\ronny\\PycharmProjects\\amcpy\\figures\\features_from_PKL' + \
+        #              str(n) + \
+        #              '.png'
         plt.savefig(figure_name, figsize=(6.4, 3.6), dpi=300)
 else:
     # Save figures
     for n in range(number_of_features):
         plt.figure(num=n)
-        figure_name = 'C:\\Users\\ronny\\PycharmProjects\\amcpy\\figures\\features_from_MAT' + \
-                      str(n) + \
-                      '.png'
+        figure_name = pathlib.Path(join('../data/figures/features_from_MAT', str(n) + '.png'))
+        #figure_name = 'C:\\Users\\ronny\\PycharmProjects\\amcpy\\figures\\features_from_MAT' + \
+        #              str(n) + \
+        #              '.png'
         plt.savefig(figure_name, figsize=(6.4, 3.6), dpi=300)
