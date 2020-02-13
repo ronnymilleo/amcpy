@@ -8,7 +8,7 @@ import features as ft
 
 # Config
 frame_size = 1024
-number_of_frames = 64
+number_of_frames = 4096
 number_of_snr = 26
 number_of_features = 22
 modulations = ['BPSK', 'QPSK', '16QAM']
@@ -23,7 +23,7 @@ for modulation_number in range(len(modulations)):
         # Load the pickle file
         with open(pkl_file_name,'rb') as handle:
             data = pickle.load(handle)
-        print(pkl_file_name + ' file loaded...')
+        print(str(pkl_file_name) + ' file loaded...')
 
         # Quick code to separate SNR
         start = 0

@@ -66,11 +66,17 @@ if selection == 1:
     # Save figures
     for n in range(number_of_features):
         plt.figure(num=n)
-        figure_name = pathlib.Path(join(os.getcwd(), 'data/figures/features_from_PKL', str(n) + '.png'))
+        #figure_name = pathlib.Path(join(os.getcwd(), 'data/figures/features_from_PKL', str(n) + '.png'))
+        figure_name = 'C:\\Users\\ronny\\PycharmProjects\\amcpy\\figures\\features_from_PKL' + \
+                      str(n) + \
+                      '.png'
         plt.savefig(figure_name, figsize=(6.4, 3.6), dpi=300)
 else:
     # Save figures
     for n in range(number_of_features):
         plt.figure(num=n)
-        figure_name = pathlib.Path(join(os.getcwd(), 'data/figures/features_from_MAT', str(n) + '.png'))
+        #figure_name = pathlib.Path(join(os.getcwd(), 'data/figures/features_from_MAT', str(n) + '.png'))
+        figure_name = 'C:\\Users\\ronny\\PycharmProjects\\amcpy\\figures\\features_from_MAT' + \
+                      str(n) + \
+                      '.png'
         plt.savefig(figure_name, figsize=(6.4, 3.6), dpi=300)
