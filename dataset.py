@@ -1,6 +1,8 @@
 import pickle
-
 import h5py
+import pathlib
+from os.path import join
+import os
 
 dataset = "/home/Adenilson.Castro/dataset/GOLD_XYZ_OSC.0001_1024.hdf5"
 datasetRonny = "F:\\2018.01\\GOLD_XYZ_OSC.0001_1024.hdf5"
@@ -57,6 +59,6 @@ temp.append(data_X)  # Append frames of every SNR
 # Create file name
 name = classes[modulation - 1][0] + '_RAW.pickle'
 
-# Save the samples ina pickle file
-with open('C:\\Users\\ronny\\PycharmProjects\\amcpy\\data\\' + name, 'wb') as handle:
+# Save the samples in a pickle file
+with open(pathlib.Path(join(os.getcwd(),'data', name)), 'wb') as handle:
     pickle.dump(temp, handle, protocol=pickle.HIGHEST_PROTOCOL)

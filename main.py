@@ -1,15 +1,16 @@
 import pickle
-
 import numpy as np
 import scipy.io
-
+import pathlib
+import os
+from os.path import join
 import features as ft
 
 # Config
 frame_size = 1024
-number_of_frames = 64
+number_of_frames = 4096
 number_of_snr = 26
-number_of_features = 9
+number_of_features = 22
 modulations = ['BPSK', 'QPSK', '16QAM']
 
 selection = int(input('Press 1 to load raw PKL or any other number to load raw MAT: '))
@@ -17,14 +18,12 @@ selection = int(input('Press 1 to load raw PKL or any other number to load raw M
 for modulation_number in range(len(modulations)):
     if selection == 1:
         # Filename setup
-        pkl_file_name = 'C:\\Users\\ronny\\PycharmProjects\\amcpy\\data\\' + \
-                        modulations[modulation_number] + \
-                        '_RAW.pickle'
+        pkl_file_name = pathlib.Path(join(os.getcwd() ,'data', str(modulations[modulation_number]) + '_RAW.pickle'))
 
         # Load the pickle file
-        with open(pkl_file_name, 'rb') as handle:
+        with open(pkl_file_name,'rb') as handle:
             data = pickle.load(handle)
-        print(pkl_file_name + ' file loaded...')
+        print(str(pkl_file_name) + ' file loaded...')
 
         # Quick code to separate SNR
         start = 0
@@ -54,17 +53,13 @@ for modulation_number in range(len(modulations)):
         print('Features calculated...')
 
         # Save the samples ina pickle file
-        with open('C:\\Users\\ronny\\PycharmProjects\\amcpy\\data\\' +
-                  modulations[modulation_number] +
-                  '_features_from_PKL.pickle', 'wb') as handle:
+        with open(pathlib.Path(join(os.getcwd(), 'data', str(modulations[modulation_number]) + '_features_from_PKL.pickle'), 'wb')) as handle:
             pickle.dump(features, handle, protocol=pickle.HIGHEST_PROTOCOL)
         print('File saved...')
         print('Finished.')
     else:
         # Filename setup
-        mat_file_name = 'C:\\Users\\ronny\\PycharmProjects\\amcpy\\data\\' + \
-                        modulations[modulation_number] + \
-                        '_RAW.mat'
+        mat_file_name = pathlib.Path(join(os.getcwd(), 'data', str(modulations[modulation_number]) + '_RAW.mat'))
 
         # Dictionary to access variable inside MAT file
         info = {'BPSK': 'pks2_signal',
@@ -83,10 +78,8 @@ for modulation_number in range(len(modulations)):
                 features[snr, frames, :] = ft.calculate_features(parsed_signal[snr, frames, :])
         print('Features calculated...')
 
-        # Save the samples ina pickle file
-        with open('C:\\Users\\ronny\\PycharmProjects\\amcpy\\data\\' +
-                  modulations[modulation_number] +
-                  '_features_from_MAT.pickle', 'wb') as handle:
+        # Save the samples in a pickle file
+        with open(pathlib.Path(join(os.getcwd(), 'data', str(modulations[modulation_number]) + '_features_from_MAT.pickle'), 'wb')) as handle:
             pickle.dump(features, handle, protocol=pickle.HIGHEST_PROTOCOL)
         print('File saved...')
         print('Finished.')
