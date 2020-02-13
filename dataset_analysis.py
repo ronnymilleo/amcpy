@@ -1,9 +1,10 @@
+import os
+import pathlib
 import pickle
+from os.path import join
+
 import matplotlib.pyplot as plt
 import numpy as np
-import pathlib
-from os.path import join
-import os
 
 # Config
 frame_size = 1024
