@@ -1,7 +1,9 @@
 import pickle
-
 import matplotlib.pyplot as plt
 import numpy as np
+import pathlib
+from os.path import join
+import os
 
 # Config
 frame_size = 1024
@@ -10,12 +12,10 @@ number_of_features = 9
 modulations = ['BPSK', 'QPSK', 'OQPSK', '8PSK', '16PSK', '32PSK', '16QAM', '32QAM', '64QAM', '128QAM', '256QAM']
 
 for modulation_number in range(len(modulations)):
-    pkl_file_name = 'C:\\Users\\ronny\\PycharmProjects\\amcpy\\data\\' + \
-                    modulations[modulation_number] + \
-                    '_RAW.pickle'
+    pkl_file_name = pathlib.Path(join(os.getcwd(), "data", str(modulations[modulation_number]) + "_RAW.pickle"))
 
     # Load the pickle file
-    with open(pkl_file_name, 'rb') as handle:
+    with open((pkl_file_name), 'rb') as handle:
         data = pickle.load(handle)
 
     signal = np.empty([26, number_of_frames, frame_size, 2])
@@ -38,8 +38,6 @@ for modulation_number in range(len(modulations)):
         plt.ylabel('Amplitude do sinal')
         plt.legend(['Real', 'Imag'])
         plt.plot(signal[n, frame, 0:32, 0:2])
-        figure_name = 'C:\\Users\\ronny\\PycharmProjects\\amcpy\\figures\\' \
-                      + modulations[modulation_number] + '\\' \
-                      + 'timedomain' + str(int(snr_array[n]))
+        figure_name = pathlib.Path(join(os.getcwd(), "figures", modulations[modulation_number], "timedomain" + str(int(snr_array[n]))))
         plt.savefig(figure_name, figsize=(6.4, 3.6), dpi=300)
         plt.close()
