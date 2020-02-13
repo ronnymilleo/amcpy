@@ -15,7 +15,7 @@ for modulation_number in range(len(modulations)):
     pkl_file_name = pathlib.Path(join(os.getcwd(), "data", str(modulations[modulation_number]) + "_RAW.pickle"))
 
     # Load the pickle file
-    with open(pkl_file_name), 'rb') as handle:
+    with open((pkl_file_name), 'rb') as handle:
         data = pickle.load(handle)
 
     signal = np.empty([26, number_of_frames, frame_size, 2])
