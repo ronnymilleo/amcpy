@@ -1,9 +1,11 @@
+import os
+import pathlib
 import pickle
+from os.path import join
+
 import numpy as np
 import scipy.io
-import pathlib
-import os
-from os.path import join
+
 import features as ft
 
 # Config
@@ -18,7 +20,7 @@ selection = int(input('Press 1 to load raw PKL or any other number to load raw M
 for modulation_number in range(len(modulations)):
     if selection == 1:
         # Filename setup
-        pkl_file_name = pathlib.Path(join(os.getcwd() ,'data', str(modulations[modulation_number]) + '_RAW.pickle'))
+        pkl_file_name = pathlib.Path(join(os.getcwd(), 'data', str(modulations[modulation_number]) + '_RAW.pickle'))
 
         # Load the pickle file
         with open(pkl_file_name,'rb') as handle:
@@ -68,7 +70,7 @@ for modulation_number in range(len(modulations)):
 
         # Load MAT file
         data_mat = scipy.io.loadmat(mat_file_name)
-        print(mat_file_name + ' file loaded and already parsed...')
+        print(str(mat_file_name) + ' file loaded and already parsed...')
         parsed_signal = data_mat[info[modulations[modulation_number]]]
 
         # Calculate features
