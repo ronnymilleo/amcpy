@@ -1,29 +1,49 @@
 import os
 import pathlib
 import pickle
+import threading
+import time
+from multiprocessing import Process
 from os.path import join
+from queue import Queue
 
 import numpy as np
 import scipy.io
 
 import features as ft
 
-# Config
+# Global variables config
+num_horses = 12
 frame_size = 1024
-number_of_frames = 4096
+number_of_frames = 100
 number_of_snr = 26
 number_of_features = 22
-modulations = ['BPSK', 'QPSK', '16QAM']
+modulations = ['BPSK', 'QPSK', 'PSK8', 'QAM16']
 
-selection = int(input('Press 1 to load raw PKL or any other number to load raw MAT: '))
 
-for modulation_number in range(len(modulations)):
+def modulation_process(modulation, selection):
+    print('Starting new process...')
+    features = np.zeros((number_of_snr, number_of_frames, number_of_features))
+
+    def go_horse():
+        snr_array = np.linspace(-20, 30, 26)
+        while True:
+            item = q.get()
+            if item is None:
+                break
+            features[item[1], item[2], :] = ft.calculate_features(item[0])
+            if item[2] == number_of_frames - 1:
+                print('Task done for SNR = {0} - Modulation = {1} - Process ID = {2}'.format(snr_array[item[1]],
+                                                                                             modulation,
+                                                                                             os.getpid()))
+            q.task_done()
+
     if selection == 1:
         # Filename setup
-        pkl_file_name = pathlib.Path(join(os.getcwd(), 'data', str(modulations[modulation_number]) + '_RAW.pickle'))
+        pkl_file_name = pathlib.Path(join(os.getcwd(), 'data', modulation + '_RAW.pickle'))
 
         # Load the pickle file
-        with open(pkl_file_name,'rb') as handle:
+        with open(pkl_file_name, 'rb') as handle:
             data = pickle.load(handle)
         print(str(pkl_file_name) + ' file loaded...')
 
@@ -46,42 +66,98 @@ for modulation_number in range(len(modulations)):
                                                                    signal[snr, frames, samples, 1]))
         print('Signal parsed...')
 
+        # Threads setup
+        q = Queue()
+        threads = []
+        for i in range(num_horses):
+            horses = threading.Thread(target=go_horse)
+            horses.start()
+            threads.append(horses)
+        print('Threads started...')
+
         # Calculate features
-        features = np.zeros((number_of_snr, number_of_frames, number_of_features))
         for snr in range(number_of_snr):
             for frames in range(number_of_frames):
-                print('Calculating for SNR = {0}'.format(snr))
-                features[snr, frames, :] = ft.calculate_features(parsed_signal[snr, frames, :])
+                q.put([parsed_signal[snr, frames, :], snr, frames])
+        q.join()
         print('Features calculated...')
 
+        # Stop workers
+        for i in range(num_horses):
+            q.put(None)
+        for horses in threads:
+            horses.join()
+        print('Horses stopped...')
+
         # Save the samples ina pickle file
-        with open(pathlib.Path(join(os.getcwd(), 'data', str(modulations[modulation_number]) + '_features_from_PKL.pickle'), 'wb')) as handle:
+        with open(pathlib.Path(join(os.getcwd(), 'data', modulation + '_features_from_MAT.pickle')), 'wb') as handle:
             pickle.dump(features, handle, protocol=pickle.HIGHEST_PROTOCOL)
         print('File saved...')
-        print('Finished.')
-    else:
+    elif selection == 2:
         # Filename setup
-        mat_file_name = pathlib.Path(join(os.getcwd(), 'data', str(modulations[modulation_number]) + '_RAW.mat'))
+        mat_file_name = pathlib.Path(join(os.getcwd(), 'data', modulation + '_RAW.mat'))
 
         # Dictionary to access variable inside MAT file
         info = {'BPSK': 'pks2_signal',
                 'QPSK': 'pks4_signal',
-                '16QAM': 'qam16_signal'}
+                'PSK8': 'pks8_signal',
+                'QAM16': 'qam16_signal'}
 
         # Load MAT file
         data_mat = scipy.io.loadmat(mat_file_name)
         print(str(mat_file_name) + ' file loaded and already parsed...')
-        parsed_signal = data_mat[info[modulations[modulation_number]]]
+        parsed_signal = data_mat[info[modulation]]
+
+        # Threads setup
+        q = Queue()
+        threads = []
+        for i in range(num_horses):
+            horses = threading.Thread(target=go_horse)
+            horses.start()
+            threads.append(horses)
+        print('Threads started...')
 
         # Calculate features
-        features = np.zeros((number_of_snr, number_of_frames, number_of_features))
         for snr in range(number_of_snr):
             for frames in range(number_of_frames):
-                features[snr, frames, :] = ft.calculate_features(parsed_signal[snr, frames, :])
+                q.put([parsed_signal[snr, frames, :], snr, frames])
+        q.join()
         print('Features calculated...')
 
+        # Stop workers
+        for i in range(num_horses):
+            q.put(None)
+        for horses in threads:
+            horses.join()
+        print('Horses stopped...')
+
         # Save the samples in a pickle file
-        with open(pathlib.Path(join(os.getcwd(), 'data', str(modulations[modulation_number]) + '_features_from_MAT.pickle'), 'wb')) as handle:
+        with open(pathlib.Path(join(os.getcwd(), 'data', modulation + '_features_from_MAT.pickle')), 'wb') as handle:
             pickle.dump(features, handle, protocol=pickle.HIGHEST_PROTOCOL)
         print('File saved...')
-        print('Finished.')
+    else:
+        # Filename setup
+        gr_file_name = pathlib.Path(join(os.getcwd(), 'gr-data', modulation + '.pickle'))
+
+        # Load the pickle file
+        with open(gr_file_name, 'rb') as handle:
+            data = pickle.load(handle)
+        print(str(gr_file_name) + ' file loaded...')
+
+    print('Process time in seconds: {0}'.format(time.process_time()))
+    print('Done.')
+
+
+if __name__ == '__main__':
+    slaves = []
+    for mod in modulations:
+        new_slave = Process(target=modulation_process, args=(mod, 2))
+        slaves.append(new_slave)
+
+    for i in range(len(modulations)):
+        slaves[i].start()
+
+    for i in range(len(modulations)):
+        slaves[i].join()
+
+    print('Lord is happy now, job is done!')
