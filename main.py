@@ -14,9 +14,9 @@ import features as ft
 
 # Global variables config
 num_horses = 12
-frame_size = 1024
-number_of_frames = 100
-number_of_snr = 26
+frame_size = 200
+number_of_frames = 500
+number_of_snr = 9
 number_of_features = 22
 modulations = ['BPSK', 'QPSK', 'PSK8', 'QAM16']
 
@@ -141,17 +141,31 @@ def modulation_process(modulation, selection):
 
         # Load the pickle file
         with open(gr_file_name, 'rb') as handle:
-            data = pickle.load(handle)
+            dataRaw = pickle.load(handle)
         print(str(gr_file_name) + ' file loaded...')
 
+        print("Spliting data from GR...")
+
+        data = np.zeros((len(dataRaw), number_of_frames, frame_size), dtype=np.complex64)        
+        for snr in range(len(dataRaw)):
+            data[snr][:] = np.split(dataRaw[snr][:number_of_frames*frame_size], number_of_frames)
+
+        print("Data splitted into {} frames containing {} symbols.".format(number_of_frames, frame_size))
+        
+        for snr in range(len(data)):
+            for frame in range(len(data[snr])):
+                features[snr][frame][:] = ft.calculate_features(data[snr][frame][:])
+
+        with open(pathlib.Path(join(os.getcwd(), "gr-data", str(modulation) + "_features.pickle")), 'wb') as handle:
+            pickle.dump(features, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        
     print('Process time in seconds: {0}'.format(time.process_time()))
     print('Done.')
-
 
 if __name__ == '__main__':
     slaves = []
     for mod in modulations:
-        new_slave = Process(target=modulation_process, args=(mod, 2))
+        new_slave = Process(target=modulation_process, args=(mod, 3))
         slaves.append(new_slave)
 
     for i in range(len(modulations)):
