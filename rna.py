@@ -10,7 +10,7 @@ from os.path import isfile, join
 import os
 import pickle
 
-number_of_frames = 500
+number_of_frames = 1024
 number_of_features = 22
 number_of_snr = 9
 
@@ -31,7 +31,6 @@ for i,mod in enumerate(featuresFiles):
     location = i * number_of_frames * number_of_snr
     
     for snr in range(len(data)):
-        print("")
         for frame in range(len(data[snr])):
             dataRna[location][:] = data[snr][frame][:]
             location += 1
@@ -45,18 +44,22 @@ for i, mod in enumerate(featuresFiles):
 
 target = LabelEncoder().fit_transform(target)
 
-#Is it necessary to normalize the data?
-dataTrain, dataTest, targetTrain, targetTest = train_test_split(dataRna, target, test_size=0.3)
+dataTrain, dataTest, targetTrain, targetTest = train_test_split(dataRna, target, test_size=0.4)
 print(dataTrain.shape, dataTest.shape, targetTrain.shape, targetTest.shape)
+dataTrainNorm = normalize(dataTrain, norm='l2')
+dataTestNorm = normalize(dataTest, norm='l2')
 
 model=Sequential()
-model.add(Dropout(0.1, input_shape=(dataTrain.shape[1],)))
-model.add(Dense(22, activation="relu", kernel_initializer="he_normal"))
-model.add(Dense(8, activation='relu', kernel_initializer='he_normal'))
+model.add(Dense(22, activation="relu", kernel_initializer="he_normal", input_shape=(dataTrainNorm.shape[1],)))
+model.add(Dropout(0.3))
+model.add(Dense(128, activation='relu', kernel_initializer='he_normal'))
+model.add(Dropout(0.3))
+model.add(Dense(32, activation='relu', kernel_initializer='he_normal'))
+model.add(Dropout(0.3))
 model.add(Dense(4, activation='softmax'))
 
 model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['sparse_categorical_accuracy'])
-model.fit(dataTrain, targetTrain, epochs=150, verbose=1)
+model.fit(dataTrainNorm, targetTrain, epochs=100, verbose=1)
 
-loss, acc = model.evaluate(dataTest, targetTest, verbose=1)
+loss, acc = model.evaluate(dataTestNorm, targetTest, verbose=1)
 print('Test Accuracy: %.3f' % acc)

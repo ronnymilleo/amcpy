@@ -14,8 +14,8 @@ import features as ft
 
 # Global variables config
 num_horses = 12
-frame_size = 200
-number_of_frames = 500
+frame_size = 1000
+number_of_frames = 1024
 number_of_snr = 9
 number_of_features = 22
 modulations = ['BPSK', 'QPSK', 'PSK8', 'QAM16']
@@ -150,7 +150,7 @@ def modulation_process(modulation, selection):
         for snr in range(len(dataRaw)):
             data[snr][:] = np.split(dataRaw[snr][:number_of_frames*frame_size], number_of_frames)
 
-        print("Data splitted into {} frames containing {} symbols.".format(number_of_frames, frame_size))
+        print("{} data splitted into {} frames containing {} symbols.".format(modulation, number_of_frames, frame_size))
         
         for snr in range(len(data)):
             for frame in range(len(data[snr])):
