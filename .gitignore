@@ -1,5 +1,9 @@
 /data/
 /figures/
 /gr-data/
+/rna/
 /top_block.py
-/rna
+/gr-data.grc
+/.idea
+/.vscode
+/__pycache__
