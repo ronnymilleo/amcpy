@@ -46,7 +46,7 @@
     </param>
     <param>
       <key>id</key>
-      <value>top_block</value>
+      <value>gr_data</value>
     </param>
     <param>
       <key>max_nouts</key>
@@ -113,7 +113,7 @@
     </param>
     <param>
       <key>_coordinate</key>
-      <value>(120, 476)</value>
+      <value>(40, 516)</value>
     </param>
     <param>
       <key>_rotation</key>
@@ -164,7 +164,7 @@
     </param>
     <param>
       <key>_coordinate</key>
-      <value>(424, 476)</value>
+      <value>(344, 516)</value>
     </param>
     <param>
       <key>_rotation</key>
@@ -215,7 +215,7 @@
     </param>
     <param>
       <key>_coordinate</key>
-      <value>(576, 476)</value>
+      <value>(496, 516)</value>
     </param>
     <param>
       <key>_rotation</key>
@@ -266,7 +266,7 @@
     </param>
     <param>
       <key>_coordinate</key>
-      <value>(272, 476)</value>
+      <value>(192, 516)</value>
     </param>
     <param>
       <key>_rotation</key>
@@ -305,7 +305,7 @@
     </param>
     <param>
       <key>_coordinate</key>
-      <value>(584, 12)</value>
+      <value>(592, 12)</value>
     </param>
     <param>
       <key>_rotation</key>
@@ -313,11 +313,38 @@
     </param>
     <param>
       <key>id</key>
-      <value>SNR</value>
+      <value>SNR_index</value>
     </param>
     <param>
       <key>value</key>
-      <value>30</value>
+      <value>2</value>
+    </param>
+  </block>
+  <block>
+    <key>variable</key>
+    <param>
+      <key>comment</key>
+      <value></value>
+    </param>
+    <param>
+      <key>_enabled</key>
+      <value>True</value>
+    </param>
+    <param>
+      <key>_coordinate</key>
+      <value>(696, 12)</value>
+    </param>
+    <param>
+      <key>_rotation</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>id</key>
+      <value>SNR_linear</value>
+    </param>
+    <param>
+      <key>value</key>
+      <value>[100,63.0957,39.8107,25.1189,15.8489,10,6.3096,3.9811,2.5119,1.5849,1,0.6310,0.3981,0.2512,0.1585,0.1,0.0631,0.0398,0.0251,0.0158,0.01]</value>
     </param>
   </block>
   <block>
@@ -456,6 +483,53 @@
     </param>
   </block>
   <block>
+    <key>analog_const_source_x</key>
+    <param>
+      <key>alias</key>
+      <value></value>
+    </param>
+    <param>
+      <key>comment</key>
+      <value></value>
+    </param>
+    <param>
+      <key>const</key>
+      <value>SNR_linear[SNR_index] + 1</value>
+    </param>
+    <param>
+      <key>affinity</key>
+      <value></value>
+    </param>
+    <param>
+      <key>_enabled</key>
+      <value>True</value>
+    </param>
+    <param>
+      <key>_coordinate</key>
+      <value>(624, 420)</value>
+    </param>
+    <param>
+      <key>_rotation</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>id</key>
+      <value>analog_const_source_x_0</value>
+    </param>
+    <param>
+      <key>maxoutbuf</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>minoutbuf</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>type</key>
+      <value>complex</value>
+    </param>
+  </block>
+  <block>
     <key>analog_random_source_x</key>
     <param>
       <key>alias</key>
@@ -475,7 +549,7 @@
     </param>
     <param>
       <key>_coordinate</key>
-      <value>(72, 244)</value>
+      <value>(56, 244)</value>
     </param>
     <param>
       <key>_rotation</key>
@@ -503,7 +577,7 @@
     </param>
     <param>
       <key>num_samps</key>
-      <value>4096*50</value>
+      <value>1024*100*3</value>
     </param>
     <param>
       <key>type</key>
@@ -512,6 +586,57 @@
     <param>
       <key>repeat</key>
       <value>False</value>
+    </param>
+  </block>
+  <block>
+    <key>blocks_divide_xx</key>
+    <param>
+      <key>alias</key>
+      <value></value>
+    </param>
+    <param>
+      <key>comment</key>
+      <value></value>
+    </param>
+    <param>
+      <key>affinity</key>
+      <value></value>
+    </param>
+    <param>
+      <key>_enabled</key>
+      <value>True</value>
+    </param>
+    <param>
+      <key>_coordinate</key>
+      <value>(840, 328)</value>
+    </param>
+    <param>
+      <key>_rotation</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>id</key>
+      <value>blocks_divide_xx_0</value>
+    </param>
+    <param>
+      <key>type</key>
+      <value>complex</value>
+    </param>
+    <param>
+      <key>maxoutbuf</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>minoutbuf</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>num_inputs</key>
+      <value>2</value>
+    </param>
+    <param>
+      <key>vlen</key>
+      <value>1</value>
     </param>
   </block>
   <block>
@@ -538,11 +663,11 @@
     </param>
     <param>
       <key>file</key>
-      <value>C:\Users\ronny\PycharmProjects\amcpy\data\binary_QAM16</value>
+      <value>C:\Users\ronny\PycharmProjects\amcpy\gr-data\binary_PSK8(-16)</value>
     </param>
     <param>
       <key>_coordinate</key>
-      <value>(832, 252)</value>
+      <value>(992, 324)</value>
     </param>
     <param>
       <key>_rotation</key>
@@ -657,7 +782,7 @@
     </param>
     <param>
       <key>noise_amp</key>
-      <value>10**(-SNR/10)</value>
+      <value>SNR_linear[SNR_index]</value>
     </param>
   </block>
   <block>
@@ -672,7 +797,7 @@
     </param>
     <param>
       <key>constellation</key>
-      <value>QAM16</value>
+      <value>PSK8</value>
     </param>
     <param>
       <key>affinity</key>
@@ -724,14 +849,26 @@
     </param>
   </block>
   <connection>
+    <source_block_id>analog_const_source_x_0</source_block_id>
+    <sink_block_id>blocks_divide_xx_0</sink_block_id>
+    <source_key>0</source_key>
+    <sink_key>1</sink_key>
+  </connection>
+  <connection>
     <source_block_id>analog_random_source_x_1</source_block_id>
     <sink_block_id>digital_constellation_modulator_0</sink_block_id>
     <source_key>0</source_key>
     <sink_key>0</sink_key>
   </connection>
   <connection>
-    <source_block_id>channels_dynamic_channel_model_0</source_block_id>
+    <source_block_id>blocks_divide_xx_0</source_block_id>
     <sink_block_id>blocks_file_sink_0</sink_block_id>
+    <source_key>0</source_key>
+    <sink_key>0</sink_key>
+  </connection>
+  <connection>
+    <source_block_id>channels_dynamic_channel_model_0</source_block_id>
+    <sink_block_id>blocks_divide_xx_0</sink_block_id>
     <source_key>0</source_key>
     <sink_key>0</sink_key>
   </connection>

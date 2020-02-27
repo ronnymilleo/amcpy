@@ -1,6 +1,11 @@
 /data/
 /figures/
 /gr-data/
+/rna/
 /top_block.py
 /rna
 /wandb
+/gr-data.grc
+/.idea
+/.vscode
+/__pycache__
