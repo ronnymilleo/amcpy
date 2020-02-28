@@ -1,0 +1,14 @@
+program: rna.py
+method: random
+metric:
+  name: loss
+  goal: minimize
+parameters:
+  dropout:
+    distribution: uniform
+    min: 0.1
+    max: 0.4
+  hidden_layer_size:
+    distribution: int_uniform
+    min: 22
+    max: 1024

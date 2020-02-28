@@ -7,9 +7,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 modulations = ['BPSK', 'QPSK', 'PSK8', 'QAM16']
-snr = np.linspace(-20,20,9, dtype=int)
+snr = np.linspace(-20,20,21, dtype=int)
 initial_delay = 256
-number_of_samples = 1024
+number_of_samples = 1000
 
 # Plot to verify modulation signals
 for modulation in modulations:

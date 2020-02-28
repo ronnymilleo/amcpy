@@ -1,20 +1,25 @@
 import numpy as np
-import sklearn
-import tensorflow as tf
-from tensorflow.keras import Sequential
-from tensorflow.keras.layers import Dense, Dropout
-from tensorflow.keras.models import load_model
-from sklearn.preprocessing import LabelEncoder, normalize
-from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
+import seaborn as sns
 import pathlib
 from os.path import isfile, join
 import os
 import pickle
 import time
 
+import pandas as pd
+import tensorflow as tf
+import sklearn
+from tensorflow.keras import Sequential
+from tensorflow.keras.layers import Dense, Dropout
+from tensorflow.keras.models import load_model
+from sklearn.preprocessing import LabelEncoder, normalize
+from sklearn.model_selection import train_test_split
+
 number_of_frames = 1024
 number_of_features = 22
 number_of_snr = 9
+modulations = ['BPSK', 'QPSK', 'PSK8', 'QAM16']
 
 def processData():
     dataFolder = pathlib.Path(join(os.getcwd(), "gr-data"))
@@ -45,7 +50,7 @@ def processData():
 
     target = LabelEncoder().fit_transform(target)
 
-    dataTrain, dataTest, targetTrain, targetTest = train_test_split(dataRna, target, test_size=0.4)
+    dataTrain, dataTest, targetTrain, targetTest = train_test_split(dataRna, target, test_size=0.3)
     print(dataTrain.shape, dataTest.shape, targetTrain.shape, targetTest.shape)
     dataTrainNorm = normalize(dataTrain, norm='l2')
     dataTestNorm = normalize(dataTest, norm='l2')
@@ -65,7 +70,7 @@ def trainRna(dataTrain, dataTest, targetTrain, targetTest):
         model.add(Dense(4, activation='softmax'))
 
         model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['sparse_categorical_accuracy'])
-        model.fit(dataTrain, targetTrain, epochs=5, verbose=1)
+        model.fit(dataTrain, targetTrain, epochs=100, verbose=1)
         
         model.save(str(rnaFolder))
         print("\nRNA saved.\n")
@@ -78,6 +83,23 @@ def trainRna(dataTrain, dataTest, targetTrain, targetTest):
         loss, acc = model.evaluate(dataTest, targetTest, verbose=1)
         print('Test Accuracy: %.3f' % acc)
 
+        print('Starting prediction')
+        predict = model.predict_classes(dataTest, verbose=1)
+
+        print('\nConfusion Matrix:\n')
+        confusionMatrix = tf.math.confusion_matrix(targetTest, predict).numpy()
+        confusionMatrixNormalized = np.around(confusionMatrix.astype('float') / confusionMatrix.sum(axis=1)[:, np.newaxis], decimals=2)
+        print(confusionMatrixNormalized)
+        
+        cmDataFrame = pd.DataFrame(confusionMatrixNormalized, index=modulations, columns=modulations)
+
+        figure = plt.figure(figsize=(8, 4),dpi=150)
+        sns.heatmap(cmDataFrame, annot=True,cmap=plt.cm.get_cmap('Blues', 6))
+        plt.tight_layout()
+        plt.title('Confusion Matrix')
+        plt.ylabel('True label')
+        plt.xlabel('Predicted label')
+        plt.show()
 
 if __name__ == '__main__':
     dataTrain, dataTest, targetTest, targetTrain = processData()
