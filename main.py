@@ -14,9 +14,9 @@ import features as ft
 
 # Global variables config
 num_horses = 12
-frame_size = 1000
-number_of_frames = 1024
-number_of_snr = 9
+frame_size = 1024
+number_of_frames = 1000
+number_of_snr = 21
 number_of_features = 22
 modulations = ['BPSK', 'QPSK', 'PSK8', 'QAM16']
 
