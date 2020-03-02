@@ -1,14 +1,22 @@
-program: rna.py
 method: random
 metric:
-  name: loss
   goal: minimize
+  name: loss
 parameters:
   dropout:
     distribution: uniform
+    max: 0.5
     min: 0.1
-    max: 0.4
-  hidden_layer_size:
+  epochs:
     distribution: int_uniform
-    min: 22
-    max: 1024
+    max: 250
+    min: 25
+  optimizer:
+    values: ["adam", "sgd", "rmsprop"]
+  layer_size:
+    distribution: int_uniform
+    max: 100
+    min: 10
+  activation:
+    values: ["relu", "sigmoid", "exponential", "tanh"]
+program: rna.py
