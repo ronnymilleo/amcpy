@@ -2,12 +2,16 @@ import os
 import pathlib
 import pickle
 from os.path import join
-
+import json
 import matplotlib.pyplot as plt
 import numpy as np
 
-modulations = ['BPSK', 'QPSK', 'PSK8', 'QAM16']
-snr = np.linspace(-20,20,21, dtype=int)
+
+with open("./info.json") as handle:
+    infoJson = json.load(handle)
+
+modulations = infoJson['modulations']['names']
+snr = list(map(int, infoJson['snr']))
 initial_delay = 256
 number_of_samples = 1000
 

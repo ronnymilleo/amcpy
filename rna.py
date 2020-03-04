@@ -97,7 +97,7 @@ def trainRna(arguments):
     model.save(str(join(rnaFolder, 'rna-' + id + '.h5')))
     print("\nRNA saved.\n")
 
-    plot_model(model, to_file=join(rnaFolder, 'model-' + id + '.png'), show_shapes=True)
+    plot_model(model, to_file=join(figFolder, 'model-' + id + '.png'), show_shapes=True)
 
     loss, acc = model.evaluate(dataTest, targetTest, verbose=1)
     print('Test Accuracy: %.3f' % acc)
@@ -119,13 +119,13 @@ def trainRna(arguments):
     confusionMatrixNormalized = np.around(confusionMatrix.astype('float') / confusionMatrix.sum(axis=1)[:, np.newaxis], decimals=2)
     print(confusionMatrixNormalized)
     cmDataFrame = pd.DataFrame(confusionMatrixNormalized, index=modulations, columns=modulations)
-    plt.figure(figsize=(8, 4),dpi=150)
+    figure = plt.figure(figsize=(8, 4),dpi=150)
     sns.heatmap(cmDataFrame, annot=True,cmap=plt.cm.get_cmap('Blues', 6))
     plt.tight_layout()
     plt.title('Confusion Matrix')
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
-    plt.savefig(join(rnaFolder, 'confusionMatrix-' + id + '.png'), bbox_inches='tight', dpi=300)
+    plt.savefig(join(figFolder, 'confusionMatrix-' + id + '.png'), bbox_inches='tight', dpi=300)
 
     plt.clf()
     plt.plot(history.history['accuracy'])
@@ -144,8 +144,11 @@ def trainRna(arguments):
     plt.xlabel('Epoch')
     plt.legend(['Train', 'Test'], loc='best')
     plt.savefig(join(figFolder, 'historyLoss-' + id + '.png'), bbox_inches='tight', dpi=300)
+    
+    plt.close(figure)
+    evaluateRna(id=id)
 
-def evaluateRna(model="foo", testSize=1000):
+def evaluateRna(id="foo", testSize=500):
     rnaFolder = pathlib.Path(join(os.getcwd(), 'rna'))
     figFolder = pathlib.Path(join(os.getcwd(), "figures"))
     dataFolder = pathlib.Path(join(os.getcwd(), "gr-data", "pickle"))
@@ -154,7 +157,7 @@ def evaluateRna(model="foo", testSize=1000):
     with open("./info.json") as handle:
         infoJson = json.load(handle)
 
-    if model == "foo":
+    if id == "foo":
         aux = [f for f in os.listdir(rnaFolder) if "rna" in f]
         rnaFiles = [join(str(rnaFolder),  item) for item in aux]
         latestRnaModel = max(rnaFiles, key=os.path.getctime)
@@ -182,12 +185,14 @@ def evaluateRna(model="foo", testSize=1000):
         for item in range(len(result)):             
             plt.plot(result[item], label=infoJson['modulations']['names'][item])
         plt.legend(loc='best')
-        plt.savefig(join(figFolder, "accuracy.png"), bbox_inches='tight', dpi=300)        
+        plt.savefig(join(figFolder, "accuracy-" + latestRnaModel.split("-")[1].split(".")[0] + ".png"), bbox_inches='tight', dpi=300)        
+        
         figure.clf()
+        plt.close(figure)
     else:        
-        rna = join(str(rnaFolder), "rna-" + model + ".h5")
+        rna = join(str(rnaFolder), "rna-" + id + ".h5")
         model = load_model(rna)
-        print("Using RNA with id {}\n.".format(model))
+        print("Using RNA with id {}.\n".format(id))
         
         result = np.zeros((len(infoJson['modulations']['names']), len(infoJson['snr'])))
         for i, mod in enumerate(dataFiles):
@@ -209,8 +214,10 @@ def evaluateRna(model="foo", testSize=1000):
         for item in range(len(result)):             
             plt.plot(result[item], label=infoJson['modulations']['names'][item])
         plt.legend(loc='best')
-        plt.savefig(join(figFolder, "accuracy.png"), bbox_inches='tight', dpi=300)        
+        plt.savefig(join(figFolder, "accuracy-" + id + ".png"), bbox_inches='tight', dpi=300)        
+        
         figure.clf()
+        plt.close(figure)
         
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='RNA argument parser')
@@ -220,6 +227,5 @@ if __name__ == '__main__':
     parser.add_argument('--layer_size', action='store', dest='layerSize')
     parser.add_argument('--activation', action='store', dest='activation')
     arguments = parser.parse_args()
-    
-    evaluateRna()
+
     trainRna(arguments) 
