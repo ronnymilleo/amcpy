@@ -6,19 +6,23 @@ import time
 from multiprocessing import Process
 from os.path import join
 from queue import Queue
-
+import json
 import numpy as np
 import scipy.io
 
 import features as ft
 
 # Global variables config
+
+with open("./info.json") as handle:
+    infoJson = json.load(handle)
+
 num_horses = 12
-frame_size = 1024
-number_of_frames = 1000
-number_of_snr = 21
-number_of_features = 22
-modulations = ['BPSK', 'QPSK', 'PSK8', 'QAM16']
+frame_size = infoJson['frameSize']
+number_of_frames = infoJson['numberOfFrames']
+number_of_snr = len(infoJson['snr'])
+number_of_features = infoJson['numberOfFeatures']
+modulations = infoJson['modulations']['names']
 
 
 def modulation_process(modulation, selection):

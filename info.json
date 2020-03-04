@@ -1,4 +1,7 @@
 {
+	"frameSize": 1024,
+	"numberOfFrames": 1000,
+	"numberOfFeatures": 22,	
 	"modulations": {
 		"names":[
 		"BPSK",

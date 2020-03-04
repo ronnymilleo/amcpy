@@ -4,12 +4,15 @@ import numpy as np
 import pathlib
 from os.path import join
 import os
+import json
 
+with open("./info.json") as handle:
+    infoJson = json.load(handle)
 # Config
-frame_size = 1024
-number_of_frames = 4096
-number_of_features = 9
-modulations = ['BPSK', 'QPSK', '16QAM']
+frame_size = infoJson['frameSize']
+number_of_frames = infoJson['numberOfFrames']
+number_of_features = infoJson['numberOfFeatures']
+modulations = infoJson['modulations']['names']
 
 selection = int(input('Press 1 to load features from PKL or any other number to load features from MAT: '))
 
