@@ -168,21 +168,50 @@ def evaluateRna(model="foo", testSize=1000):
                 data = pickle.load(handle)
             for snr in range(len(data)):
                 dataTest = data[snr][:testSize]
+                dataTest = normalize(dataTest, norm='l2')
                 rightLabel = [infoJson['modulations']['index'][i] for _ in range(len(dataTest))]
                 predict = model.predict_classes(dataTest)
                 accuracy = accuracy_score(rightLabel, predict)
                 result[i][snr] = accuracy
         
         figure = plt.figure(figsize=(8, 4),dpi=150)
-        for item in range(len(result)):
-            plt.title(infoJson['modulations']['names'][item] + " accuracy")
-            plt.ylabel("Right prediction")
-            plt.xlabel("SNR [dB]")
-            plt.xticks(np.arange(len(infoJson['snr'])), infoJson['snr'])
-            plt.plot(result[item])
-            plt.savefig(join(figFolder, "accuracy-" + infoJson['modulations']['names'][item] + ".png"), bbox_inches='tight', dpi=300)
-            figure.clf()
-
+        plt.title("Accuracy")
+        plt.ylabel("Right prediction")
+        plt.xlabel("SNR [dB]")
+        plt.xticks(np.arange(len(infoJson['snr'])), infoJson['snr'])
+        for item in range(len(result)):             
+            plt.plot(result[item], label=infoJson['modulations']['names'][item])
+        plt.legend(loc='best')
+        plt.savefig(join(figFolder, "accuracy.png"), bbox_inches='tight', dpi=300)        
+        figure.clf()
+    else:        
+        rna = join(str(rnaFolder), "rna-" + model + ".h5")
+        model = load_model(rna)
+        print("Using RNA with id {}\n.".format(model))
+        
+        result = np.zeros((len(infoJson['modulations']['names']), len(infoJson['snr'])))
+        for i, mod in enumerate(dataFiles):
+            with open(join(dataFolder, mod), 'rb') as handle:
+                data = pickle.load(handle)
+            for snr in range(len(data)):
+                dataTest = data[snr][:testSize]
+                dataTest = normalize(dataTest, norm='l2')
+                rightLabel = [infoJson['modulations']['index'][i] for _ in range(len(dataTest))]
+                predict = model.predict_classes(dataTest)
+                accuracy = accuracy_score(rightLabel, predict)
+                result[i][snr] = accuracy
+        
+        figure = plt.figure(figsize=(8, 4),dpi=150)
+        plt.title("Accuracy")
+        plt.ylabel("Right prediction")
+        plt.xlabel("SNR [dB]")
+        plt.xticks(np.arange(len(infoJson['snr'])), infoJson['snr'])
+        for item in range(len(result)):             
+            plt.plot(result[item], label=infoJson['modulations']['names'][item])
+        plt.legend(loc='best')
+        plt.savefig(join(figFolder, "accuracy.png"), bbox_inches='tight', dpi=300)        
+        figure.clf()
+        
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='RNA argument parser')
     parser.add_argument('--dropout', action='store', dest='dropout')
