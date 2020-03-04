@@ -15,7 +15,7 @@ number_of_samples = 1000
 for modulation in modulations:
     signal = []
     for i, value in enumerate(snr):
-        file_name = pathlib.Path(join(os.getcwd(), 'gr-data', 'binary_' + modulation + "(" + "{}".format(value) + ")"))
+        file_name = pathlib.Path(join(os.getcwd(), 'gr-data', "binary", 'binary_' + modulation + "(" + "{}".format(value) + ")"))
         # Complex64 because it's float32 on I and Q
         data = np.fromfile(file_name, dtype=np.complex64)
 
@@ -33,7 +33,7 @@ for modulation in modulations:
         plt.show()
         '''
         #Save binary files in pickle (without delay)
-    with open(pathlib.Path(join(os.getcwd(), 'gr-data', modulation + '.pickle')), 'wb') as handle:
+    with open(pathlib.Path(join(os.getcwd(), 'gr-data', "pickle", modulation + '.pickle')), 'wb') as handle:
         pickle.dump(signal, handle, protocol=pickle.HIGHEST_PROTOCOL)
     print(modulation + ' file saved...')
 
