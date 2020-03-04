@@ -137,7 +137,7 @@ def modulation_process(modulation, selection):
         print('File saved...')
     else:
         # Filename setup
-        gr_file_name = pathlib.Path(join(os.getcwd(), 'gr-data', modulation + '.pickle'))
+        gr_file_name = pathlib.Path(join(os.getcwd(), 'gr-data', "pickle", modulation + '.pickle'))
 
         # Load the pickle file
         with open(gr_file_name, 'rb') as handle:
@@ -156,7 +156,7 @@ def modulation_process(modulation, selection):
             for frame in range(len(data[snr])):
                 features[snr][frame][:] = ft.calculate_features(data[snr][frame][:])
 
-        with open(pathlib.Path(join(os.getcwd(), "gr-data", str(modulation) + "_features.pickle")), 'wb') as handle:
+        with open(pathlib.Path(join(os.getcwd(), "gr-data", "pickle", str(modulation) + "_features.pickle")), 'wb') as handle:
             pickle.dump(features, handle, protocol=pickle.HIGHEST_PROTOCOL)
         
     print('Process time in seconds: {0}'.format(time.process_time()))

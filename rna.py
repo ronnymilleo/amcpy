@@ -11,6 +11,7 @@ from wandb.keras import WandbCallback
 import sys
 import argparse
 import uuid
+import json
 
 import pandas as pd
 import tensorflow as tf
@@ -21,6 +22,7 @@ from tensorflow.keras.models import load_model
 from tensorflow.keras.utils import plot_model
 from sklearn.preprocessing import LabelEncoder, normalize
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
 
 number_of_frames = 1024
 number_of_features = 22
@@ -39,7 +41,7 @@ wandb.init(project="amcpy", config=hyperparameterDefaults)
 config = wandb.config
 
 def processData():
-    dataFolder = pathlib.Path(join(os.getcwd(), "gr-data"))
+    dataFolder = pathlib.Path(join(os.getcwd(), "gr-data", "pickle"))
     featuresFiles = [f for f in os.listdir(dataFolder) if "features" in f]
 
     dataRna = np.zeros((number_of_frames*number_of_snr*len(featuresFiles), number_of_features))
@@ -62,7 +64,7 @@ def processData():
     for i, mod in enumerate(featuresFiles):
         start = i*samples
         end = start + samples
-        for sample in range(start, end):
+        for _ in range(start, end):
             target.append(mod.split("_")[0])
 
     target = LabelEncoder().fit_transform(target)
@@ -78,6 +80,7 @@ def processData():
 def trainRna(arguments):
     dataTrain, dataTest, targetTrain, targetTest = processData()
     rnaFolder = pathlib.Path(join(os.getcwd(), 'rna'))
+    figFolder = pathlib.Path(join(os.getcwd(), "figures"))
     id = str(uuid.uuid1()).split('-')[0]
    
     model=Sequential()
@@ -131,7 +134,7 @@ def trainRna(arguments):
     plt.ylabel('Accuracy')
     plt.xlabel('Epoch')
     plt.legend(['Train', 'Test'], loc='best')
-    plt.savefig(join(rnaFolder, 'historyAccuracy-' + id + '.png'), bbox_inches='tight', dpi=300)
+    plt.savefig(join(figFolder, 'historyAccuracy-' + id + '.png'), bbox_inches='tight', dpi=300)
 
     plt.clf()
     plt.plot(history.history['loss'])
@@ -140,7 +143,45 @@ def trainRna(arguments):
     plt.ylabel('Loss')
     plt.xlabel('Epoch')
     plt.legend(['Train', 'Test'], loc='best')
-    plt.savefig(join(rnaFolder, 'historyLoss-' + id + '.png'), bbox_inches='tight', dpi=300)
+    plt.savefig(join(figFolder, 'historyLoss-' + id + '.png'), bbox_inches='tight', dpi=300)
+
+def evaluateRna(model="foo", testSize=1000):
+    rnaFolder = pathlib.Path(join(os.getcwd(), 'rna'))
+    figFolder = pathlib.Path(join(os.getcwd(), "figures"))
+    dataFolder = pathlib.Path(join(os.getcwd(), "gr-data", "pickle"))
+    dataFiles = [f for f in os.listdir(dataFolder) if "features" in f]
+
+    with open("./info.json") as handle:
+        infoJson = json.load(handle)
+
+    if model == "foo":
+        aux = [f for f in os.listdir(rnaFolder) if "rna" in f]
+        rnaFiles = [join(str(rnaFolder),  item) for item in aux]
+        latestRnaModel = max(rnaFiles, key=os.path.getctime)
+        print("RNA ID not provided. Using RNA model with id {}, created at {} instead.\n".format(latestRnaModel.split("-")[1].split(".")[0], time.ctime(os.path.getmtime(latestRnaModel))))
+
+        model = load_model(latestRnaModel)
+    
+        result = np.zeros((len(infoJson['modulations']['names']), len(infoJson['snr'])))
+        for i, mod in enumerate(dataFiles):
+            with open(join(dataFolder, mod), 'rb') as handle:
+                data = pickle.load(handle)
+            for snr in range(len(data)):
+                dataTest = data[snr][:testSize]
+                rightLabel = [infoJson['modulations']['index'][i] for _ in range(len(dataTest))]
+                predict = model.predict_classes(dataTest)
+                accuracy = accuracy_score(rightLabel, predict)
+                result[i][snr] = accuracy
+        
+        figure = plt.figure(figsize=(8, 4),dpi=150)
+        for item in range(len(result)):
+            plt.title(infoJson['modulations']['names'][item] + " accuracy")
+            plt.ylabel("Right prediction")
+            plt.xlabel("SNR [dB]")
+            plt.xticks(np.arange(len(infoJson['snr'])), infoJson['snr'])
+            plt.plot(result[item])
+            plt.savefig(join(figFolder, "accuracy-" + infoJson['modulations']['names'][item] + ".png"), bbox_inches='tight', dpi=300)
+            figure.clf()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='RNA argument parser')
@@ -150,5 +191,6 @@ if __name__ == '__main__':
     parser.add_argument('--layer_size', action='store', dest='layerSize')
     parser.add_argument('--activation', action='store', dest='activation')
     arguments = parser.parse_args()
-
-    trainRna(arguments)
+    
+    evaluateRna()
+    trainRna(arguments) 
