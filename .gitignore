@@ -6,7 +6,7 @@
 /rna
 /wandb
 /gr-data.grc
-/.idea
+/.idea/
 /.vscode
 /__pycache__
 /vscode.env

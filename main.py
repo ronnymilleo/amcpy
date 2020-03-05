@@ -1,3 +1,4 @@
+import json
 import os
 import pathlib
 import pickle
@@ -6,7 +7,7 @@ import time
 from multiprocessing import Process
 from os.path import join
 from queue import Queue
-import json
+
 import numpy as np
 import scipy.io
 
@@ -148,23 +149,25 @@ def modulation_process(modulation, selection):
             dataRaw = pickle.load(handle)
         print(str(gr_file_name) + ' file loaded...')
 
-        print("Spliting data from GR...")
+        print("Splitting data from GR...")
 
-        data = np.zeros((len(dataRaw), number_of_frames, frame_size), dtype=np.complex64)        
+        data = np.zeros((len(dataRaw), number_of_frames, frame_size), dtype=np.complex64)
         for snr in range(len(dataRaw)):
-            data[snr][:] = np.split(dataRaw[snr][:number_of_frames*frame_size], number_of_frames)
+            data[snr][:] = np.split(dataRaw[snr][:number_of_frames * frame_size], number_of_frames)
 
-        print("{} data splitted into {} frames containing {} symbols.".format(modulation, number_of_frames, frame_size))
-        
+        print("{} data split into {} frames containing {} symbols.".format(modulation, number_of_frames, frame_size))
+
         for snr in range(len(data)):
             for frame in range(len(data[snr])):
                 features[snr][frame][:] = ft.calculate_features(data[snr][frame][:])
 
-        with open(pathlib.Path(join(os.getcwd(), "gr-data", "pickle", str(modulation) + "_features.pickle")), 'wb') as handle:
+        with open(pathlib.Path(join(os.getcwd(), "gr-data", "pickle", str(modulation) + "_features.pickle")),
+                  'wb') as handle:
             pickle.dump(features, handle, protocol=pickle.HIGHEST_PROTOCOL)
-        
+
     print('Process time in seconds: {0}'.format(time.process_time()))
     print('Done.')
+
 
 if __name__ == '__main__':
     slaves = []
