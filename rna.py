@@ -22,18 +22,24 @@ from tensorflow.keras.models import load_model
 from tensorflow.keras.utils import plot_model
 from wandb.keras import WandbCallback
 
-number_of_frames = 1024
-number_of_features = 22
-number_of_snr = 21
+
+with open("./info.json") as handle:
+    infoJson = json.load(handle)
+
+number_of_frames = infoJson['numberOfFrames']
+number_of_features = infoJson['numberOfFeatures']
+number_of_snr = len(infoJson['snr'])
 modulations = ['BPSK', 'QPSK', 'PSK8', 'QAM16']
 
 hyperparameterDefaults = dict(
     dropout=0.3,
-    channels_one=16,
-    channels_two=32,
-    batch_size=100,
     learning_rate=0.001,
     epochs=25,
+    optmizer="Adam",
+    activation="relu",
+    layerSizeHl1=48,
+    layerSizeHl2=128,
+    layerSizeH1=32
 )
 wandb.init(project="amcpy", config=hyperparameterDefaults)
 config = wandb.config
@@ -85,9 +91,11 @@ def trainRna(arguments):
     model = Sequential()
     model.add(Dense(22, activation="relu", kernel_initializer="he_normal", input_shape=(dataTrain.shape[1],)))
     model.add(Dropout(float(arguments.dropout)))
-    model.add(Dense(int(arguments.layerSize), activation=arguments.activation, kernel_initializer='he_normal'))
+    model.add(Dense(int(arguments.layerSizeHl1), activation=arguments.activation, kernel_initializer='he_normal'))
     model.add(Dropout(float(arguments.dropout)))
-    model.add(Dense(int(arguments.layerSize), activation=arguments.activation, kernel_initializer='he_normal'))
+    model.add(Dense(int(arguments.layerSizeHl2), activation=arguments.activation, kernel_initializer='he_normal'))
+    model.add(Dropout(float(arguments.dropout)))
+    model.add(Dense(int(arguments.layerSizeHl3), activation=arguments.activation, kernel_initializer='he_normal'))
     model.add(Dropout(float(arguments.dropout)))
     model.add(Dense(4, activation='softmax'))
 
@@ -106,7 +114,9 @@ def trainRna(arguments):
                'loss': loss,
                'dropout': arguments.dropout,
                'epochs': arguments.epochs,
-               'layer_syze': arguments.layerSize,
+               'layer_syze_hl1': arguments.layerSizeHl1,
+               'layer_syze_hl2': arguments.layerSizeHl2,
+               'layer_syze_hl3': arguments.layerSizeHl3,
                'optimizer': arguments.optimizer,
                'activation': arguments.activation}
     wandb.log(metrics)
@@ -154,10 +164,7 @@ def evaluateRna(id="foo", testSize=500):
     rnaFolder = pathlib.Path(join(os.getcwd(), 'rna'))
     figFolder = pathlib.Path(join(os.getcwd(), "figures"))
     dataFolder = pathlib.Path(join(os.getcwd(), "gr-data", "pickle"))
-    dataFiles = [f for f in os.listdir(dataFolder) if "features" in f]
-
-    with open("./info.json") as handle:
-        infoJson = json.load(handle)
+    dataFiles = [f for f in os.listdir(dataFolder) if "features" in f]    
 
     if id == "foo":
         aux = [f for f in os.listdir(rnaFolder) if "rna" in f]
@@ -229,7 +236,9 @@ if __name__ == '__main__':
     parser.add_argument('--dropout', action='store', dest='dropout')
     parser.add_argument('--epochs', action='store', dest='epochs')
     parser.add_argument('--optimizer', action='store', dest='optimizer')
-    parser.add_argument('--layer_size', action='store', dest='layerSize')
+    parser.add_argument('--layer_size_hl1', action='store', dest='layerSizeHl1')
+    parser.add_argument('--layer_size_hl2', action='store', dest='layerSizeHl2')
+    parser.add_argument('--layer_size_hl3', action='store', dest='layerSizeHl3')
     parser.add_argument('--activation', action='store', dest='activation')
     arguments = parser.parse_args()
 

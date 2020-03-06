@@ -13,10 +13,18 @@ parameters:
     min: 25
   optimizer:
     values: ["adam", "sgd", "rmsprop"]
-  layer_size:
+  layer_size_hl1:
+    distribution: int_uniform
+    max: 100
+    min: 10
+  layer_size_hl2:
+    distribution: int_uniform
+    max: 100
+    min: 10
+  layer_size_hl3:
     distribution: int_uniform
     max: 100
     min: 10
   activation:
-    values: ["relu", "sigmoid", "exponential", "tanh"]
+    values: ["relu", "sigmoid", "exponential", "tanh", "softmax", "sigmoid", "linear"]
 program: rna.py
