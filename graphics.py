@@ -11,7 +11,7 @@ with open("./info.json") as handle:
 # Config
 frame_size = infoJson['frameSize']
 number_of_frames = infoJson['numberOfFrames']
-number_of_features = infoJson['numberOfFeatures']
+number_of_features = len(infoJson['features']['using'])
 modulations = infoJson['modulations']['names']
 
 selection = int(input('Press 1 to load features from PKL or any other number to load features from MAT: '))
