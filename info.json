@@ -1,21 +1,22 @@
 {
-	"frameSize": 1024,
-	"numberOfFrames": 1000,
-	"numberOfFeatures": 22,	
-	"modulations": {
+	"frameSize":1024,
+	"numberOfFrames":1000,
+	"numberOfFeatures":22,	
+	"modulations":{
 		"names":[
 		"BPSK",
 		"QPSK",
 		"PSK8",
 		"QAM16"
-	],
+	]	,
 		"index":[
 			0,
 			1,
 			2,
 			3
-	]},
-	"snr": [
+		]
+	},
+	"snr":[
 		"-20",
 		"-18",
 		"-16",
@@ -38,7 +39,8 @@
 		"18",
 		"20"
 	],
-	"features": [
+	"features":{
+		"names":[
 		"Std of the Absolute Instantaneous Phase",
 		"Std of the Instantaneous Phase",
 		"Std of the Absolute Instantaneous Frequency",
@@ -61,5 +63,41 @@
 		"Mean Value of the Signal Magnitude",
 		"Normalized Sqrt Value of Sum of Amplitude",
 		"Ratio of I/Q Components"
-    ]
+		],
+		"using":[
+			1,
+			2,
+			3,
+			4,
+			5,
+			6,
+			7,
+			8,
+			9
+		],
+		"functions":{
+			"1":"functions.std_deviation((abs(functions.instantaneous_phase(input_signal))))",
+			"2":"functions.std_deviation(functions.instantaneous_phase(input_signal))",
+			"3":"functions.std_deviation((abs(functions.instantaneous_frequency(input_signal))))"		,
+			"4":"functions.std_deviation(functions.instantaneous_frequency(input_signal))",
+			"5":"functions.kurtosis(functions.instantaneous_absolute(input_signal))",
+			"6":"functions.kurtosis(functions.instantaneous_frequency(input_signal))",
+			"7":"functions.gmax(input_signal)",
+			"8":"functions.mean_of_squared(functions.instantaneous_cn_absolute(input_signal))",
+			"9":"functions.std_deviation(abs(functions.instantaneous_cn_absolute(input_signal)))",
+			"10":"functions.std_deviation(functions.instantaneous_cn_absolute(input_signal))",
+			"11":"functions.cum20(input_signal)",
+			"12":"functions.cum21(input_signal)",
+			"13":"functions.cum40(input_signal)",
+			"14":"functions.cum41(input_signal)",
+			"15":"functions.cum42(input_signal)",
+			"16":"functions.cum60(input_signal)",
+			"17":"functions.cum61(input_signal)",
+			"18":"functions.cum62(input_signal)",
+			"19":"functions.cum63(input_signal)",
+			"20":"functions.meanAbsolute(input_signal)",
+			"21":"functions.sqrtAmplitude(input_signal)",
+			"22":"functions.ratioIQ(input_signal)"
+		}		
+	}
 }

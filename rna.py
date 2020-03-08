@@ -27,9 +27,9 @@ with open("./info.json") as handle:
     infoJson = json.load(handle)
 
 number_of_frames = infoJson['numberOfFrames']
-number_of_features = infoJson['numberOfFeatures']
+number_of_features = len(infoJson['features']['using'])
 number_of_snr = len(infoJson['snr'])
-modulations = ['BPSK', 'QPSK', 'PSK8', 'QAM16']
+modulations = infoJson['modulations']['names']
 
 hyperparameterDefaults = dict(
     dropout=0.3,

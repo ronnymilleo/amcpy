@@ -22,7 +22,7 @@ num_horses = 12
 frame_size = infoJson['frameSize']
 number_of_frames = infoJson['numberOfFrames']
 number_of_snr = len(infoJson['snr'])
-number_of_features = infoJson['numberOfFeatures']
+number_of_features = len(infoJson['features']['using'])
 modulations = infoJson['modulations']['names']
 
 
