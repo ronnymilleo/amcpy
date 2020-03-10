@@ -29,6 +29,6 @@ for modulation in modulations:
     for new_step in range(0, 10000, 10):
         frame = plot_time_gif(init_x, data, init_start, init_end, new_step)
         frames.append(frame)
-        print('{} frame appended...'.format(new_step))
+        print(modulation + ' {} frame appended...'.format(new_step))
 
     gif.save(frames, modulation + '.gif', duration=1/24)
