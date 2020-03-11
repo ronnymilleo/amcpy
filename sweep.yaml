@@ -1,7 +1,7 @@
 method: random
 metric:
-  goal: minimize
-  name: loss
+  goal: maximize
+  name: accuracy
 parameters:
   dropout:
     distribution: uniform
