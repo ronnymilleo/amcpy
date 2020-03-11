@@ -7,13 +7,15 @@
 		"BPSK",
 		"QPSK",
 		"PSK8",
-		"QAM16"
+		"QAM16",
+		"noise"
 	]	,
 		"index":[
 			0,
 			1,
 			2,
-			3
+			3,
+			4
 		]
 	},
 	"snr":[
