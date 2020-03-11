@@ -153,7 +153,7 @@ def modulation_process(modulation, selection):
 
         data = np.zeros((len(dataRaw), number_of_frames, frame_size), dtype=np.complex64)
         for snr in range(len(dataRaw)):
-            data[snr][:] = np.split(dataRaw[snr][:number_of_frames * frame_size], number_of_frames)
+            data[snr][:] = np.split(dataRaw[snr][1000:(number_of_frames * frame_size) + 1000], number_of_frames)
 
         print("{} data split into {} frames containing {} symbols.".format(modulation, number_of_frames, frame_size))
 
