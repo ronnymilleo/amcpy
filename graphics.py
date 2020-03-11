@@ -21,7 +21,7 @@ feature_names = infoJson['features']['names']
 features = []
 for modulation in range(number_of_modulations):
     # Filename setup
-    pkl_file_name = pathlib.Path(join(os.getcwd(), 'gr-data', modulation_names[modulation] + '_features.pickle'))
+    pkl_file_name = pathlib.Path(join(os.getcwd(), 'gr-data', 'pickle', modulation_names[modulation] + '_features.pickle'))
 
     # Load the pickle file
     with open(pkl_file_name, 'rb') as handle:
@@ -58,7 +58,7 @@ for n in range(number_of_features):
     plt.ylabel('Value')
     plt.title('Feature ' + str(n + 1) + ' - ' + feature_names[n])
     plt.legend(modulation_names)
-    figure_name = pathlib.Path(join(os.getcwd(), 'gr-data/figures/feature_' + str(n + 1) + '.png'))
+    figure_name = pathlib.Path(join(os.getcwd(), 'figures', 'features', 'feature_' + str(n + 1) + '.png'))
     plt.savefig(figure_name, figsize=(6.4, 3.6), dpi=300)
     plt.close()
 
@@ -73,7 +73,7 @@ for n in range(number_of_features):
     plt.ylabel('Value')
     plt.title('Feature ' + str(n + 1) + ' - ' + feature_names[n])
     # plt.legend(modulation_names)
-    figure_name = pathlib.Path(join(os.getcwd(), 'gr-data/figures/feature_' + str(n + 1) + '_all_frames.png'))
+    figure_name = pathlib.Path(join(os.getcwd(), 'figures', 'features', 'feature_' + str(n + 1) + '_all_frames.png'))
     plt.savefig(figure_name, figsize=(6.4, 3.6), dpi=300)
     plt.close()
 
@@ -100,6 +100,6 @@ for n in range(number_of_features):
     plt.ylabel('Value')
     plt.title('Feature ' + str(n + 1) + ' - ' + feature_names[n])
     plt.legend(modulation_names)
-    figure_name = pathlib.Path(join(os.getcwd(), 'gr-data/figures/feature_' + str(n + 1) + '_error_bar.png'))
+    figure_name = pathlib.Path(join(os.getcwd(), 'figures', 'features', 'feature_' + str(n + 1) + '_error_bar.png'))
     plt.savefig(figure_name, figsize=(6.4, 3.6), dpi=300)
     plt.close()
