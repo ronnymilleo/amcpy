@@ -1,8 +1,9 @@
-import pickle
-import h5py
-import pathlib
-from os.path import join
 import os
+import pathlib
+import pickle
+from os.path import join
+
+import h5py
 
 dataset = "/home/Adenilson.Castro/dataset/GOLD_XYZ_OSC.0001_1024.hdf5"
 datasetRonny = "F:\\2018.01\\GOLD_XYZ_OSC.0001_1024.hdf5"

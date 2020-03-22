@@ -22,7 +22,6 @@ from tensorflow.keras.models import load_model
 from tensorflow.keras.utils import plot_model
 from wandb.keras import WandbCallback
 
-
 with open("./info.json") as handle:
     infoJson = json.load(handle)
 
@@ -45,27 +44,27 @@ wandb.init(project="amcpy", config=hyperparameterDefaults)
 config = wandb.config
 
 
-def processData():
-    dataFolder = pathlib.Path(join(os.getcwd(), "gr-data", "pickle"))
-    featuresFiles = [f for f in os.listdir(dataFolder) if "features" in f]
+def process_data():
+    data_folder = pathlib.Path(join(os.getcwd(), "gr-data", "pickle"))
+    features_files = [f for f in os.listdir(data_folder) if "features" in f]
 
-    dataRna = np.zeros((number_of_frames * number_of_snr * len(featuresFiles), number_of_features))
+    data_rna = np.zeros((number_of_frames * number_of_snr * len(features_files), number_of_features))
     target = []
 
-    for i, mod in enumerate(featuresFiles):
+    for i, mod in enumerate(features_files):
 
-        with open(join(dataFolder, mod), 'rb') as handle:
-            data = pickle.load(handle)
+        with open(join(data_folder, mod), 'rb') as ft_handle:
+            data = pickle.load(ft_handle)
 
         location = i * number_of_frames * number_of_snr
 
         for snr in range(len(data)):
             for frame in range(len(data[snr])):
-                dataRna[location][:] = data[snr][frame][:]
+                data_rna[location][:] = data[snr][frame][:]
                 location += 1
 
     samples = number_of_frames * number_of_snr
-    for i, mod in enumerate(featuresFiles):
+    for i, mod in enumerate(features_files):
         start = i * samples
         end = start + samples
         for _ in range(start, end):
@@ -73,23 +72,23 @@ def processData():
 
     target = LabelEncoder().fit_transform(target)
 
-    dataTrain, dataTest, targetTrain, targetTest = train_test_split(dataRna, target, test_size=0.3)
+    data_train, data_test, target_train, target_test = train_test_split(data_rna, target, test_size=0.3)
     print("\nData shape:")
-    print(dataTrain.shape, dataTest.shape, targetTrain.shape, targetTest.shape)
-    dataTrainNorm = normalize(dataTrain, norm='l2')
-    dataTestNorm = normalize(dataTest, norm='l2')
+    print(data_train.shape, data_test.shape, target_train.shape, target_test.shape)
+    data_train_norm = normalize(data_train, norm='l2')
+    data_test_norm = normalize(data_test, norm='l2')
 
-    return dataTrainNorm, dataTestNorm, targetTrain, targetTest
+    return data_train_norm, data_test_norm, target_train, target_test
 
 
-def trainRna(arguments):
-    dataTrain, dataTest, targetTrain, targetTest = processData()
-    rnaFolder = pathlib.Path(join(os.getcwd(), 'rna'))
-    figFolder = pathlib.Path(join(os.getcwd(), "figures"))
+def train_rna(arguments):
+    data_train, data_test, target_train, target_test = process_data()
+    rna_folder = pathlib.Path(join(os.getcwd(), 'rna'))
+    fig_folder = pathlib.Path(join(os.getcwd(), "figures"))
     id = str(uuid.uuid1()).split('-')[0]
 
     model = Sequential()
-    model.add(Dense(22, activation="relu", kernel_initializer="he_normal", input_shape=(dataTrain.shape[1],)))
+    model.add(Dense(22, activation="relu", kernel_initializer="he_normal", input_shape=(data_train.shape[1],)))
     model.add(Dropout(float(arguments.dropout)))
     model.add(Dense(int(arguments.layerSizeHl1), activation=arguments.activation, kernel_initializer='he_normal'))
     model.add(Dropout(float(arguments.dropout)))
@@ -100,14 +99,14 @@ def trainRna(arguments):
     model.add(Dense(4, activation='softmax'))
 
     model.compile(optimizer=arguments.optimizer, loss='sparse_categorical_crossentropy', metrics=['accuracy'])
-    history = model.fit(dataTrain, targetTrain, validation_split=0.25, epochs=int(arguments.epochs), verbose=1,
-                        callbacks=[WandbCallback(validation_data=(dataTest, targetTest))])
-    model.save(str(join(rnaFolder, 'rna-' + id + '.h5')))
+    history = model.fit(data_train, target_train, validation_split=0.25, epochs=int(arguments.epochs), verbose=1,
+                        callbacks=[WandbCallback(validation_data=(data_test, target_test))])
+    model.save(str(join(rna_folder, 'rna-' + id + '.h5')))
     print("\nRNA saved.\n")
 
-    plot_model(model, to_file=join(figFolder, 'model-' + id + '.png'), show_shapes=True)
+    plot_model(model, to_file=join(fig_folder, 'model-' + id + '.png'), show_shapes=True)
 
-    loss, acc = model.evaluate(dataTest, targetTest, verbose=1)
+    loss, acc = model.evaluate(data_test, target_test, verbose=1)
     print('Test Accuracy: %.3f' % acc)
 
     metrics = {'accuracy': acc,
@@ -122,21 +121,22 @@ def trainRna(arguments):
     wandb.log(metrics)
 
     print('Starting prediction')
-    predict = model.predict_classes(dataTest, verbose=1)
+    predict = model.predict_classes(data_test, verbose=1)
 
     print('\nConfusion Matrix:\n')
-    confusionMatrix = tf.math.confusion_matrix(targetTest, predict).numpy()
-    confusionMatrixNormalized = np.around(confusionMatrix.astype('float') / confusionMatrix.sum(axis=1)[:, np.newaxis],
-                                          decimals=2)
-    print(confusionMatrixNormalized)
-    cmDataFrame = pd.DataFrame(confusionMatrixNormalized, index=modulations, columns=modulations)
+    confusion_matrix = tf.math.confusion_matrix(target_test, predict).numpy()
+    confusion_matrix_normalized = np.around(
+        confusion_matrix.astype('float') / confusion_matrix.sum(axis=1)[:, np.newaxis],
+        decimals=2)
+    print(confusion_matrix_normalized)
+    cm_data_frame = pd.DataFrame(confusion_matrix_normalized, index=modulations, columns=modulations)
     figure = plt.figure(figsize=(8, 4), dpi=150)
-    sns.heatmap(cmDataFrame, annot=True, cmap=plt.cm.get_cmap('Blues', 6))
+    sns.heatmap(cm_data_frame, annot=True, cmap=plt.cm.get_cmap('Blues', 6))
     plt.tight_layout()
     plt.title('Confusion Matrix')
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
-    plt.savefig(join(figFolder, 'confusionMatrix-' + id + '.png'), bbox_inches='tight', dpi=300)
+    plt.savefig(join(fig_folder, 'confusion_matrix-' + id + '.png'), bbox_inches='tight', dpi=300)
 
     plt.clf()
     plt.plot(history.history['accuracy'])
@@ -145,7 +145,7 @@ def trainRna(arguments):
     plt.ylabel('Accuracy')
     plt.xlabel('Epoch')
     plt.legend(['Train', 'Test'], loc='best')
-    plt.savefig(join(figFolder, 'historyAccuracy-' + id + '.png'), bbox_inches='tight', dpi=300)
+    plt.savefig(join(fig_folder, 'history_accuracy-' + id + '.png'), bbox_inches='tight', dpi=300)
 
     plt.clf()
     plt.plot(history.history['loss'])
@@ -154,33 +154,33 @@ def trainRna(arguments):
     plt.ylabel('Loss')
     plt.xlabel('Epoch')
     plt.legend(['Train', 'Test'], loc='best')
-    plt.savefig(join(figFolder, 'historyLoss-' + id + '.png'), bbox_inches='tight', dpi=300)
+    plt.savefig(join(fig_folder, 'history_loss-' + id + '.png'), bbox_inches='tight', dpi=300)
 
     plt.close(figure)
-    evaluateRna(id=id)
+    evaluate_rna(id=id)
 
 
-def evaluateRna(id="foo", testSize=500):
-    rnaFolder = pathlib.Path(join(os.getcwd(), 'rna'))
-    figFolder = pathlib.Path(join(os.getcwd(), "figures"))
-    dataFolder = pathlib.Path(join(os.getcwd(), "gr-data", "pickle"))
-    dataFiles = [f for f in os.listdir(dataFolder) if "features" in f]    
+def evaluate_rna(id="foo", test_size=500):
+    rna_folder = pathlib.Path(join(os.getcwd(), 'rna'))
+    fig_folder = pathlib.Path(join(os.getcwd(), "figures"))
+    data_folder = pathlib.Path(join(os.getcwd(), "gr-data", "pickle"))
+    data_files = [f for f in os.listdir(data_folder) if "features" in f]
 
     if id == "foo":
-        aux = [f for f in os.listdir(rnaFolder) if "rna" in f]
-        rnaFiles = [join(str(rnaFolder), item) for item in aux]
-        latestRnaModel = max(rnaFiles, key=os.path.getctime)
+        aux = [f for f in os.listdir(rna_folder) if "rna" in f]
+        rna_files = [join(str(rna_folder), item) for item in aux]
+        latest_rna_model = max(rna_files, key=os.path.getctime)
         print("RNA ID not provided. Using RNA model with id {}, created at {} instead.\n".format(
-            latestRnaModel.split("-")[1].split(".")[0], time.ctime(os.path.getmtime(latestRnaModel))))
+            latest_rna_model.split("-")[1].split(".")[0], time.ctime(os.path.getmtime(latest_rna_model))))
 
-        model = load_model(latestRnaModel)
+        model = load_model(latest_rna_model)
 
         result = np.zeros((len(infoJson['modulations']['names']), len(infoJson['snr'])))
-        for i, mod in enumerate(dataFiles):
-            with open(join(dataFolder, mod), 'rb') as handle:
+        for i, mod in enumerate(data_files):
+            with open(join(data_folder, mod), 'rb') as handle:
                 data = pickle.load(handle)
             for snr in range(len(data)):
-                dataTest = data[snr][:testSize]
+                dataTest = data[snr][:test_size]
                 dataTest = normalize(dataTest, norm='l2')
                 rightLabel = [infoJson['modulations']['index'][i] for _ in range(len(dataTest))]
                 predict = model.predict_classes(dataTest)
@@ -195,22 +195,22 @@ def evaluateRna(id="foo", testSize=500):
         for item in range(len(result)):
             plt.plot(result[item], label=infoJson['modulations']['names'][item])
         plt.legend(loc='best')
-        plt.savefig(join(figFolder, "accuracy-" + latestRnaModel.split("-")[1].split(".")[0] + ".png"),
+        plt.savefig(join(fig_folder, "accuracy-" + latest_rna_model.split("-")[1].split(".")[0] + ".png"),
                     bbox_inches='tight', dpi=300)
 
         figure.clf()
         plt.close(figure)
     else:
-        rna = join(str(rnaFolder), "rna-" + id + ".h5")
+        rna = join(str(rna_folder), "rna-" + id + ".h5")
         model = load_model(rna)
         print("Using RNA with id {}.\n".format(id))
 
         result = np.zeros((len(infoJson['modulations']['names']), len(infoJson['snr'])))
-        for i, mod in enumerate(dataFiles):
-            with open(join(dataFolder, mod), 'rb') as handle:
+        for i, mod in enumerate(data_files):
+            with open(join(data_folder, mod), 'rb') as handle:
                 data = pickle.load(handle)
             for snr in range(len(data)):
-                dataTest = data[snr][:testSize]
+                dataTest = data[snr][:test_size]
                 dataTest = normalize(dataTest, norm='l2')
                 rightLabel = [infoJson['modulations']['index'][i] for _ in range(len(dataTest))]
                 predict = model.predict_classes(dataTest)
@@ -225,7 +225,7 @@ def evaluateRna(id="foo", testSize=500):
         for item in range(len(result)):
             plt.plot(result[item], label=infoJson['modulations']['names'][item])
         plt.legend(loc='best')
-        plt.savefig(join(figFolder, "accuracy-" + id + ".png"), bbox_inches='tight', dpi=300)
+        plt.savefig(join(fig_folder, "accuracy-" + id + ".png"), bbox_inches='tight', dpi=300)
 
         figure.clf()
         plt.close(figure)
@@ -241,5 +241,4 @@ if __name__ == '__main__':
     parser.add_argument('--layer_size_hl3', action='store', dest='layerSizeHl3')
     parser.add_argument('--activation', action='store', dest='activation')
     arguments = parser.parse_args()
-
-    trainRna(arguments)
+    train_rna(arguments)
