@@ -13,92 +13,64 @@ import scipy.io
 
 import features as ft
 
-# Global variables config
-
 with open("./info.json") as handle:
     infoJson = json.load(handle)
 
-num_horses = 12
+num_horses = 12  # Well, that's should be your horsepower... be careful
 frame_size = infoJson['frameSize']
-number_of_frames = infoJson['numberOfFrames']
-number_of_snr = len(infoJson['snr'])
-number_of_features = len(infoJson['features']['using'])
+nb_of_frames = infoJson['numberOfFrames']
+nb_of_snr = len(infoJson['snr'])
+nb_of_features = len(infoJson['features']['using'])
 modulations = infoJson['modulations']['names']
 
 
 def modulation_process(modulation, selection):
     print('Starting new process...')
-    features = np.zeros((number_of_snr, number_of_frames, number_of_features))
+    features = np.zeros((nb_of_snr, nb_of_frames, nb_of_features))
 
+    # Function to be threaded and processed in parallel
     def go_horse():
-        snr_array = np.linspace(-20, 30, 26)
+        snr_array = np.linspace(-20, 20, 21)  # Let's make sure we're getting only the necessary SNR
         while True:
-            item = q.get()
-            if item is None:
+            item = q.get()  # This line gets values from queue to evaluate
+            if item is None:  # This line will run only when queue is empty (job done)
                 break
             features[item[1], item[2], :] = ft.calculate_features(item[0])
-            if item[2] == number_of_frames - 1:
+            if item[2] == nb_of_frames - 1:
                 print('Task done for SNR = {0} - Modulation = {1} - Process ID = {2}'.format(snr_array[item[1]],
                                                                                              modulation,
                                                                                              os.getpid()))
-            q.task_done()
+            q.task_done()  # This line says "hey, I'm done, give-me more!"
 
-    if selection == 1:
+    # Selection will define where the data is coming from and how it will be saved after
+    if selection == 1:  # Pickle broken dataset from "Over-the-air bla bla bla" paper
         # Filename setup
         pkl_file_name = pathlib.Path(join(os.getcwd(), 'data', modulation + '_RAW.pickle'))
 
         # Load the pickle file
-        with open(pkl_file_name, 'rb') as handle:
-            data = pickle.load(handle)
+        with open(pkl_file_name, 'rb') as pkl_handle:  # Pickle handle -> renamed to not shadow handle from outer scope
+            data_pkl = pickle.load(pkl_handle)
         print(str(pkl_file_name) + ' file loaded...')
 
         # Quick code to separate SNR
         start = 0
         end = 4096
-        signal = np.empty([number_of_snr, number_of_frames, frame_size, 2])
-        for snr in range(number_of_snr):
-            signal[snr, 0:4096, :, :] = data[0][start:end, :, :]
+        signal = np.empty([nb_of_snr, nb_of_frames, frame_size, 2])
+        for snr in range(nb_of_snr):
+            signal[snr, 0:4096, :, :] = data_pkl[0][start:end, :, :]
             start += 4096
             end += 4096
         print('Signal split in different SNR...')
 
         # Parse signal
-        parsed_signal = np.zeros((number_of_snr, number_of_frames, frame_size), dtype=np.complex)
-        for snr in range(number_of_snr):
-            for frames in range(number_of_frames):
+        parsed_signal = np.zeros((nb_of_snr, nb_of_frames, frame_size), dtype=np.complex64)
+        for snr in range(nb_of_snr):
+            for frames in range(nb_of_frames):
                 for samples in range(frame_size):
                     parsed_signal[snr, frames, samples] = (complex(signal[snr, frames, samples, 0],
                                                                    signal[snr, frames, samples, 1]))
         print('Signal parsed...')
-
-        # Threads setup
-        q = Queue()
-        threads = []
-        for i in range(num_horses):
-            horses = threading.Thread(target=go_horse)
-            horses.start()
-            threads.append(horses)
-        print('Threads started...')
-
-        # Calculate features
-        for snr in range(number_of_snr):
-            for frames in range(number_of_frames):
-                q.put([parsed_signal[snr, frames, :], snr, frames])
-        q.join()
-        print('Features calculated...')
-
-        # Stop workers
-        for i in range(num_horses):
-            q.put(None)
-        for horses in threads:
-            horses.join()
-        print('Horses stopped...')
-
-        # Save the samples ina pickle file
-        with open(pathlib.Path(join(os.getcwd(), 'data', modulation + '_features_from_MAT.pickle')), 'wb') as handle:
-            pickle.dump(features, handle, protocol=pickle.HIGHEST_PROTOCOL)
-        print('File saved...')
-    elif selection == 2:
+    elif selection == 2:  # MATLAB generated dataset with no ralei ='(
         # Filename setup
         mat_file_name = pathlib.Path(join(os.getcwd(), 'data', modulation + '_RAW.mat'))
 
@@ -112,73 +84,79 @@ def modulation_process(modulation, selection):
         data_mat = scipy.io.loadmat(mat_file_name)
         print(str(mat_file_name) + ' file loaded and already parsed...')
         parsed_signal = data_mat[info[modulation]]
-
-        # Threads setup
-        q = Queue()
-        threads = []
-        for i in range(num_horses):
-            horses = threading.Thread(target=go_horse)
-            horses.start()
-            threads.append(horses)
-        print('Threads started...')
-
-        # Calculate features
-        for snr in range(number_of_snr):
-            for frames in range(number_of_frames):
-                q.put([parsed_signal[snr, frames, :], snr, frames])
-        q.join()
-        print('Features calculated...')
-
-        # Stop workers
-        for i in range(num_horses):
-            q.put(None)
-        for horses in threads:
-            horses.join()
-        print('Horses stopped...')
-
-        # Save the samples in a pickle file
-        with open(pathlib.Path(join(os.getcwd(), 'data', modulation + '_features_from_MAT.pickle')), 'wb') as handle:
-            pickle.dump(features, handle, protocol=pickle.HIGHEST_PROTOCOL)
-        print('File saved...')
-    else:
+        print('Signal parsed...')
+    else:  # GNURadio generated dataset -- the best ever
         # Filename setup
         gr_file_name = pathlib.Path(join(os.getcwd(), 'gr-data', "pickle", modulation + '.pickle'))
 
         # Load the pickle file
-        with open(gr_file_name, 'rb') as handle:
-            dataRaw = pickle.load(handle)
+        with open(gr_file_name, 'rb') as gr_handle:  # Same as said at selection 1 -- duh
+            data_gr = pickle.load(gr_handle)
         print(str(gr_file_name) + ' file loaded...')
 
+        # Parsing signal
         print("Splitting data from GR...")
+        parsed_signal = np.zeros((len(data_gr), nb_of_frames, frame_size), dtype=np.complex64)
+        for snr in range(len(data_gr)):
+            parsed_signal[snr][:] = np.split(data_gr[snr][1024:(nb_of_frames * frame_size) + 1024], nb_of_frames)
+        print("{} data split into {} frames containing {} symbols.".format(modulation, nb_of_frames, frame_size))
 
-        data = np.zeros((len(dataRaw), number_of_frames, frame_size), dtype=np.complex64)
-        for snr in range(len(dataRaw)):
-            data[snr][:] = np.split(dataRaw[snr][1000:(number_of_frames * frame_size) + 1000], number_of_frames)
+    # Calculating features using threads...
+    # Threads setup
+    q = Queue()
+    threads = []
+    for _ in range(num_horses):
+        horses = threading.Thread(target=go_horse)
+        horses.start()  # All threads will be started and will wait for instructions from their master (me)
+        threads.append(horses)  # For every time this program run, it will allocate that number of threads
+    print('Threads started...')
 
-        print("{} data split into {} frames containing {} symbols.".format(modulation, number_of_frames, frame_size))
+    # Calculate features
+    for snr in range(nb_of_snr):  # Every SNR
+        for frames in range(nb_of_frames):  # of every frame wil be at the Queue waiting to be calculated
+            q.put([parsed_signal[snr, frames, :], snr, frames])  # Run!
+    q.join()  # This is the line that synchronizes everything, so threads that finish first will wait ok?
+    print('Features calculated...')
 
-        for snr in range(len(data)):
-            for frame in range(len(data[snr])):
-                features[snr][frame][:] = ft.calculate_features(data[snr][frame][:])
+    # Stop workers
+    for _ in range(num_horses):
+        q.put(None)  # So we put nothing into the Queue to finish everything
+    for horses in threads:
+        horses.join()  # Let the horses rest now, make sure your computer is cool enough before running again
+    print('Horses stopped...')
 
+    if selection == 1:
+        # Save the samples in a pickle file
+        with open(pathlib.Path(join(os.getcwd(), 'data', modulation + '_features_from_PKL.pickle')), 'wb') as p_handle:
+            pickle.dump(features, p_handle, protocol=pickle.HIGHEST_PROTOCOL)
+        print('File saved...')
+    elif selection == 2:
+        # Save the samples in a pickle file
+        with open(pathlib.Path(join(os.getcwd(), 'data', modulation + '_features_from_MAT.pickle')), 'wb') as m_handle:
+            pickle.dump(features, m_handle, protocol=pickle.HIGHEST_PROTOCOL)
+        print('File saved...')
+    else:
+        # Save the samples in a pickle file
         with open(pathlib.Path(join(os.getcwd(), "gr-data", "pickle", str(modulation) + "_features.pickle")),
-                  'wb') as handle:
-            pickle.dump(features, handle, protocol=pickle.HIGHEST_PROTOCOL)
+                  'wb') as gr_handle:
+            pickle.dump(features, gr_handle, protocol=pickle.HIGHEST_PROTOCOL)
+        print('File saved...')
 
-    print('Process time in seconds: {0}'.format(time.process_time()))
+    print('Process time in seconds: {0}'.format(time.process_time()))  # Horses benchmark!
     print('Done.')
 
 
 if __name__ == '__main__':
-    slaves = []
+    dataset = 0  # Use GNURadio dataset
+    brothers = []  # Every brother of mine will have the same horsepower we set before
     for mod in modulations:
-        new_slave = Process(target=modulation_process, args=(mod, 3))
-        slaves.append(new_slave)
+        new_slave = Process(target=modulation_process, args=(mod, dataset))
+        brothers.append(new_slave)  # Here we have my brothers * horses = total power
 
     for i in range(len(modulations)):
-        slaves[i].start()
+        brothers[i].start()  # We start together
 
     for i in range(len(modulations)):
-        slaves[i].join()
+        brothers[i].join()  # We finish together (and wait for the slowest)
 
-    print('Lord is happy now, job is done!')
+    print('Celebrate! We have done the job you asked!')

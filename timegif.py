@@ -8,7 +8,7 @@ import numpy as np
 
 @gif.frame
 def plot_time_gif(x, y, start, end, step):
-    plt.figure(figsize=(14, 6), dpi=200)
+    plt.figure(figsize=(14, 6), dpi=150)
     plt.subplot(1, 2, 1)
     plt.plot(x + step, np.real(y[start + step:end + step]))
     plt.plot(x + step, np.imag(y[start + step:end + step]))
@@ -21,9 +21,9 @@ def plot_time_gif(x, y, start, end, step):
 
 # CONFIG
 snr = 20
-gif_frame_duration = 500  # milliseconds
+gif_frame_duration = int(1000 / 25)  # milliseconds
 frame_size = 1024
-number_of_frames = 50
+number_of_frames = 800
 modulations = ['BPSK', 'QPSK', 'PSK8', 'QAM16']
 for modulation in modulations:
     file_name = pathlib.Path(
