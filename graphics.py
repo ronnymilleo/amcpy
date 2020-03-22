@@ -53,8 +53,13 @@ for m in range(number_of_modulations):
 # Plot graphics using only mean
 for n in range(number_of_features):
     plt.figure(num=n, figsize=(6.4, 3.6), dpi=300)
-    for m in range(number_of_modulations):
-        plt.plot(snr_array[m, :, n, n], mean_features[m, :, n, n], linewidth=1.0)
+    # Plot without for loop because of bug
+    # TODO: fix bug using for loop to plot (result is graphics with same color)
+    plt.plot(snr_array[0, :, n, n], mean_features[0, :, n, n], linewidth=1.0)
+    plt.plot(snr_array[1, :, n, n], mean_features[1, :, n, n], linewidth=1.0)
+    plt.plot(snr_array[2, :, n, n], mean_features[2, :, n, n], linewidth=1.0)
+    plt.plot(snr_array[3, :, n, n], mean_features[3, :, n, n], linewidth=1.0)
+    plt.plot(snr_array[4, :, n, n], mean_features[4, :, n, n], linewidth=1.0)
     plt.title('Feature ' + str(n + 1) + ' - ' + feature_names[n])
     plt.xlabel('SNR')
     plt.ylabel('Value')
@@ -66,8 +71,11 @@ for n in range(number_of_features):
 # Plot graphics with all frames
 for n in range(number_of_features):
     plt.figure(num=n, figsize=(6.4, 3.6), dpi=300)
-    for m in range(number_of_modulations):
-        plt.plot(snr_array[m, :, :, n], mean_features[m, :, :, n], linewidth=1.0)
+    plt.plot(snr_array[0, :, :, n], features[0, :, :, n], linewidth=1.0)
+    plt.plot(snr_array[1, :, :, n], features[1, :, :, n], linewidth=1.0)
+    plt.plot(snr_array[2, :, :, n], features[2, :, :, n], linewidth=1.0)
+    plt.plot(snr_array[3, :, :, n], features[3, :, :, n], linewidth=1.0)
+    plt.plot(snr_array[4, :, :, n], features[4, :, :, n], linewidth=1.0)
     plt.xlabel('SNR')
     plt.ylabel('Value')
     plt.title('Feature ' + str(n + 1) + ' - ' + feature_names[n])
@@ -80,10 +88,21 @@ for n in range(number_of_features):
 # Plot graphics with error bar using standard deviation
 for n in range(number_of_features):
     plt.figure(num=n, figsize=(6.4, 3.6), dpi=300)
-    for m in range(number_of_modulations):
-        plt.errorbar(snr_array[m, :, n, n],
-                     mean_features[m, :, n, n],
-                     yerr=std_features[m, :, n, n])
+    plt.errorbar(snr_array[0, :, n, n],
+                 mean_features[0, :, n, n],
+                 yerr=std_features[0, :, n, n])
+    plt.errorbar(snr_array[1, :, n, n],
+                 mean_features[1, :, n, n],
+                 yerr=std_features[1, :, n, n])
+    plt.errorbar(snr_array[2, :, n, n],
+                 mean_features[2, :, n, n],
+                 yerr=std_features[2, :, n, n])
+    plt.errorbar(snr_array[3, :, n, n],
+                 mean_features[3, :, n, n],
+                 yerr=std_features[3, :, n, n])
+    plt.errorbar(snr_array[4, :, n, n],
+                 mean_features[4, :, n, n],
+                 yerr=std_features[4, :, n, n])
     plt.xlabel('SNR')
     plt.ylabel('Value with sigma')
     plt.title('Feature ' + str(n + 1) + ' - ' + feature_names[n])
