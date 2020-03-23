@@ -28,7 +28,6 @@ for modulation in modulations:
                                           'gr-data',
                                           'binary',
                                           'binary_' + modulation + "(" + "{}".format(value) + ")"))
-            continue
         try:
             # Complex64 because it's float32 on I and Q
             data = np.fromfile(file_name, dtype=np.complex64)
@@ -41,7 +40,8 @@ for modulation in modulations:
         aux = np.zeros((len(snr), len(data[300 * 8:number_of_samples])), dtype=np.complex64)
         aux[i][:] = data[300 * 8:number_of_samples]
         signal.append(aux[i])
-        print('~\\binary_' + modulation + ' appended...')
+        print('{} samples of ~\\binary_'.format(len(data[300 * 8:number_of_samples]))
+              + modulation + '({}) appended...'.format(value))
 
     # Save binary files in pickle (without delay)
     with open(pathlib.Path(join('C:\\Users\\ronny\\Google Drive\\Colab Notebooks',
