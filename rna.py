@@ -266,7 +266,7 @@ if __name__ == '__main__':
         layer_size_hl2=int(arguments.layer_size_hl2),
         layer_size_hl3=int(arguments.layer_size_hl3)
     )
-    wandb.init(entity="gicsufpr", project="amcpy-team", config=hyperparameterDefaults)
+    wandb.init(project="amcpy-team", config=hyperparameterDefaults)
     config = wandb.config
 
     # evaluate_rna(id="3cabaed4")
