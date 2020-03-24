@@ -31,6 +31,7 @@ for modulation in range(number_of_modulations):
     # Load the pickle file
     with open(pkl_file_name, 'rb') as handle:
         features.append(pickle.load(handle))
+    print('Files loaded...')
 
 # Calculate mean, min and max of features by SNR and by modulation
 mean_features = np.ndarray([number_of_modulations, number_of_snr, number_of_frames, number_of_features])
@@ -40,6 +41,7 @@ for m in range(number_of_modulations):
         for ft in range(number_of_features):
             mean_features[m, snr, :, ft] = np.mean(features[m][snr, :, ft])
             std_features[m, snr, :, ft] = np.std(features[m][snr, :, ft])
+print('Means and standard deviations calculated...')
 
 # SNR axis setup
 var = np.linspace(-20, 20, 21)
@@ -55,11 +57,11 @@ for n in range(number_of_features):
     plt.figure(num=n, figsize=(6.4, 3.6), dpi=300)
     # Plot without for loop because of bug
     # TODO: fix bug using for loop to plot (result is graphics with same color)
-    plt.plot(snr_array[0, :, n, n], mean_features[0, :, n, n], linewidth=1.0)
-    plt.plot(snr_array[1, :, n, n], mean_features[1, :, n, n], linewidth=1.0)
-    plt.plot(snr_array[2, :, n, n], mean_features[2, :, n, n], linewidth=1.0)
-    plt.plot(snr_array[3, :, n, n], mean_features[3, :, n, n], linewidth=1.0)
-    plt.plot(snr_array[4, :, n, n], mean_features[4, :, n, n], linewidth=1.0)
+    plt.plot(snr_array[0, :, n, n], mean_features[0, :, n, n], '#03cffc', linewidth=1.0)  # BPSK
+    plt.plot(snr_array[1, :, n, n], mean_features[1, :, n, n], '#6203fc', linewidth=1.0)  # QPSK
+    plt.plot(snr_array[2, :, n, n], mean_features[2, :, n, n], '#be03fc', linewidth=1.0)  # PSK8
+    plt.plot(snr_array[3, :, n, n], mean_features[3, :, n, n], '#fc0320', linewidth=1.0)  # QAM16
+    plt.plot(snr_array[4, :, n, n], mean_features[4, :, n, n], 'k', linewidth=1.0)  # Noise
     plt.title('Feature ' + str(n + 1) + ' - ' + feature_names[n])
     plt.xlabel('SNR')
     plt.ylabel('Value')
@@ -67,15 +69,16 @@ for n in range(number_of_features):
     figure_name = pathlib.Path(join(os.getcwd(), 'figures', 'features', 'feature_' + str(n + 1) + '.png'))
     plt.savefig(figure_name, figsize=(6.4, 3.6), dpi=300)
     plt.close()
+    print('Plotting means of feature number {}'.format(n))
 
 # Plot graphics with all frames
 for n in range(number_of_features):
     plt.figure(num=n, figsize=(6.4, 3.6), dpi=300)
-    plt.plot(snr_array[0, :, :, n], features[0, :, :, n], linewidth=1.0)
-    plt.plot(snr_array[1, :, :, n], features[1, :, :, n], linewidth=1.0)
-    plt.plot(snr_array[2, :, :, n], features[2, :, :, n], linewidth=1.0)
-    plt.plot(snr_array[3, :, :, n], features[3, :, :, n], linewidth=1.0)
-    plt.plot(snr_array[4, :, :, n], features[4, :, :, n], linewidth=1.0)
+    plt.plot(snr_array[0, :, 0:500, n], features[0][:, 0:500, n], '#03cffc', linewidth=1.0)  # BPSK
+    plt.plot(snr_array[1, :, 0:500, n], features[1][:, 0:500, n], '#6203fc', linewidth=1.0)  # QPSK
+    plt.plot(snr_array[2, :, 0:500, n], features[2][:, 0:500, n], '#be03fc', linewidth=1.0)  # PSK8
+    plt.plot(snr_array[3, :, 0:500, n], features[3][:, 0:500, n], '#fc0320', linewidth=1.0)  # QAM16
+    plt.plot(snr_array[4, :, 0:500, n], features[4][:, 0:500, n], 'k', linewidth=1.0)  # Noise
     plt.xlabel('SNR')
     plt.ylabel('Value')
     plt.title('Feature ' + str(n + 1) + ' - ' + feature_names[n])
@@ -84,25 +87,26 @@ for n in range(number_of_features):
     figure_name = pathlib.Path(join(os.getcwd(), 'figures', 'features', 'feature_' + str(n + 1) + '_all_frames.png'))
     plt.savefig(figure_name, figsize=(6.4, 3.6), dpi=300)
     plt.close()
+    print('Plotting 500 frames of feature number {}'.format(n))
 
 # Plot graphics with error bar using standard deviation
 for n in range(number_of_features):
     plt.figure(num=n, figsize=(6.4, 3.6), dpi=300)
     plt.errorbar(snr_array[0, :, n, n],
                  mean_features[0, :, n, n],
-                 yerr=std_features[0, :, n, n])
+                 yerr=std_features[0, :, n, n], color='#03cffc')
     plt.errorbar(snr_array[1, :, n, n],
                  mean_features[1, :, n, n],
-                 yerr=std_features[1, :, n, n])
+                 yerr=std_features[1, :, n, n], color='#6203fc')
     plt.errorbar(snr_array[2, :, n, n],
                  mean_features[2, :, n, n],
-                 yerr=std_features[2, :, n, n])
+                 yerr=std_features[2, :, n, n], color='#be03fc')
     plt.errorbar(snr_array[3, :, n, n],
                  mean_features[3, :, n, n],
-                 yerr=std_features[3, :, n, n])
+                 yerr=std_features[3, :, n, n], color='#fc0320')
     plt.errorbar(snr_array[4, :, n, n],
                  mean_features[4, :, n, n],
-                 yerr=std_features[4, :, n, n])
+                 yerr=std_features[4, :, n, n], color='k')
     plt.xlabel('SNR')
     plt.ylabel('Value with sigma')
     plt.title('Feature ' + str(n + 1) + ' - ' + feature_names[n])
@@ -110,3 +114,4 @@ for n in range(number_of_features):
     figure_name = pathlib.Path(join(os.getcwd(), 'figures', 'features', 'feature_' + str(n + 1) + '_error_bar.png'))
     plt.savefig(figure_name, figsize=(6.4, 3.6), dpi=300)
     plt.close()
+    print('Plotting error bar of feature number {}'.format(n))

@@ -16,7 +16,7 @@ import features as ft
 with open("./info.json") as handle:
     infoJson = json.load(handle)
 
-num_horses = 12  # Well, that's should be your horsepower... be careful
+num_horses = 2  # Well, that's should be your horsepower... be careful
 frame_size = infoJson['frameSize']
 nb_of_frames = infoJson['numberOfFrames']
 nb_of_snr = len(infoJson['snr'])
