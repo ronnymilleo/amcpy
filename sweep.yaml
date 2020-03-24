@@ -3,6 +3,15 @@ metric:
   goal: maximize
   name: accuracy
 parameters:
+  activation:
+    values:
+      - relu
+      - sigmoid
+      - exponential
+      - tanh
+      - softmax
+      - sigmoid
+      - linear
   dropout:
     distribution: uniform
     max: 0.5
@@ -11,8 +20,6 @@ parameters:
     distribution: int_uniform
     max: 250
     min: 25
-  optimizer:
-    values: ["adam", "sgd", "rmsprop"]
   layer_size_hl1:
     distribution: int_uniform
     max: 100
@@ -25,6 +32,9 @@ parameters:
     distribution: int_uniform
     max: 100
     min: 10
-  activation:
-    values: ["relu", "sigmoid", "exponential", "tanh", "softmax", "sigmoid", "linear"]
+  optimizer:
+    values:
+      - adam
+      - sgd
+      - rmsprop
 program: rna.py
