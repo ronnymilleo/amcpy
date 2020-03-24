@@ -84,14 +84,14 @@ def train_rna(config):
 
     #Here is where the magic really happens! Check this out:
     model = Sequential() #The model used is the sequential
-    model.add(Dense(22, activation="relu", kernel_initializer="he_normal", input_shape=(data_train.shape[1],))) #It has a fully connected input layer
-    model.add(Dense(int(config.layer_size_hl1), activation=config.activation, kernel_initializer='he_normal'))  # With three others hidden layers
-    model.add(Dropout(float(config.dropout)))                                                                   #And a dropout layer between them
-    model.add(Dense(int(config.layer_size_hl2), activation=config.activation, kernel_initializer='he_normal'))
-    model.add(Dropout(float(config.dropout)))
-    model.add(Dense(int(config.layer_size_hl3), activation=config.activation, kernel_initializer='he_normal'))
-    model.add(Dropout(float(config.dropout)))
-    model.add(Dense(5, activation='softmax'))
+    model.add(Dense(data_train.shape[1], activation="relu", kernel_initializer="he_normal", input_shape=(data_train.shape[1],))) #It has a fully connected input layer
+    model.add(Dense(config.layer_size_hl1, activation=config.activation, kernel_initializer='he_normal'))  # With three others hidden layers
+    model.add(Dropout(config.dropout))                                                                   #And a dropout layer between them
+    model.add(Dense(config.layer_size_hl2, activation=config.activation, kernel_initializer='he_normal'))
+    model.add(Dropout(config.dropout))
+    model.add(Dense(config.layer_size_hl3, activation=config.activation, kernel_initializer='he_normal'))
+    model.add(Dropout(config.dropout))
+    model.add(Dense(len(info_json['modulations']['names']), activation='softmax'))
 
     #Once created, the model is then compiled, trained 
     #and saved for further evaluation
@@ -255,16 +255,16 @@ if __name__ == '__main__':
 
     #WANDB hyperparameters setup
     hyperparameterDefaults = dict(
-        dropout=arguments.dropout,
+        dropout=round(float(arguments.dropout), 2),
         epochs=arguments.epochs,
         optimizer=arguments.optimizer,
         activation=arguments.activation,
-        layer_size_hl1=arguments.layer_size_hl1,
-        layer_size_hl2=arguments.layer_size_hl2,
-        layer_size_hl3=arguments.layer_size_hl3
+        layer_size_hl1=int(arguments.layer_size_hl1),
+        layer_size_hl2=int(arguments.layer_size_hl2),
+        layer_size_hl3=int(arguments.layer_size_hl3)
     )
     wandb.init(entity="gicsufpr", project="amcpy-team", config=hyperparameterDefaults)
     config = wandb.config
 
-    evaluate_rna(id="3cabaed4")
+    #evaluate_rna(id="3cabaed4")
     train_rna(config)
