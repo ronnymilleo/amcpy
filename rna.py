@@ -22,25 +22,26 @@ from tensorflow.keras.models import load_model
 from tensorflow.keras.utils import plot_model
 from wandb.keras import WandbCallback
 
-#Loads JSON file with execution setup
+# Loads JSON file with execution setup
 with open("./info.json") as handle:
     info_json = json.load(handle)
 
-#Config variables based on the JSON file
+# Config variables based on the JSON file
 number_of_frames = info_json['numberOfFrames']
 number_of_features = len(info_json['features']['using'])
 number_of_snr = len(info_json['snr'])
 modulations = info_json['modulations']['names']
 
-def process_data(): #Prepare the data for the magic
+
+def process_data():  # Prepare the data for the magic
     data_folder = pathlib.Path(join(os.getcwd(), "gr-data", "pickle"))
-    features_files = [f + ("_features.pickle") for f in info_json['modulations']['names']]
+    features_files = [f + "_features.pickle" for f in info_json['modulations']['names']]
 
     data_rna = np.zeros((number_of_frames * number_of_snr * len(features_files), number_of_features))
     target = []
 
-    #Here each modulation file is loaded and all
-    #frames to all SNR values are vertically stacked
+    # Here each modulation file is loaded and all
+    # frames to all SNR values are vertically stacked
     for i, mod in enumerate(features_files):
         print("Processing {} data".format(mod.split("_")[0]))
         with open(join(data_folder, mod), 'rb') as ft_handle:
@@ -53,8 +54,8 @@ def process_data(): #Prepare the data for the magic
                 data_rna[location][:] = data[snr][frame][:]
                 location += 1
 
-    #An array containing the labels for 
-    #each modulation is then created...
+    # An array containing the labels for
+    # each modulation is then created...
     samples = number_of_frames * number_of_snr
     for i, mod in enumerate(features_files):
         start = i * samples
@@ -62,11 +63,11 @@ def process_data(): #Prepare the data for the magic
         for _ in range(start, end):
             target.append(mod.split("_")[0])
 
-    #...and encoded to labels ranging from 0 to 4 - 4 modulations + noise
+    # ...and encoded to labels ranging from 0 to 4 - 4 modulations + noise
     target = LabelEncoder().fit_transform(target)
 
-    #Finally, the data is splitted into train and test 
-    #samples and normalized for a better learning 
+    # Finally, the data is splitted into train and test
+    # samples and normalized for a better learning
     data_train, data_test, target_train, target_test = train_test_split(data_rna, target, test_size=0.3)
     print("\nData shape:")
     print(data_train.shape, data_test.shape, target_train.shape, target_test.shape)
@@ -80,35 +81,37 @@ def train_rna(config):
     data_train, data_test, target_train, target_test = process_data()
     rna_folder = pathlib.Path(join(os.getcwd(), 'rna'))
     fig_folder = pathlib.Path(join(os.getcwd(), "figures"))
-    id = str(uuid.uuid1()).split('-')[0] #Generates a unique id to each RNA created
+    id = str(uuid.uuid1()).split('-')[0]  # Generates a unique id to each RNA created
 
-    #Here is where the magic really happens! Check this out:
-    model = Sequential() #The model used is the sequential
-    model.add(Dense(data_train.shape[1], activation="relu", kernel_initializer="he_normal", input_shape=(data_train.shape[1],))) #It has a fully connected input layer
-    model.add(Dense(config.layer_size_hl1, activation=config.activation, kernel_initializer='he_normal'))  # With three others hidden layers
-    model.add(Dropout(config.dropout))                                                                   #And a dropout layer between them
+    # Here is where the magic really happens! Check this out:
+    model = Sequential()  # The model used is the sequential
+    model.add(Dense(data_train.shape[1], activation="relu", kernel_initializer="he_normal",
+                    input_shape=(data_train.shape[1],)))  # It has a fully connected input layer
+    model.add(Dense(config.layer_size_hl1, activation=config.activation,
+                    kernel_initializer='he_normal'))  # With three others hidden layers
+    model.add(Dropout(config.dropout))  # And a dropout layer between them
     model.add(Dense(config.layer_size_hl2, activation=config.activation, kernel_initializer='he_normal'))
     model.add(Dropout(config.dropout))
     model.add(Dense(config.layer_size_hl3, activation=config.activation, kernel_initializer='he_normal'))
     model.add(Dropout(config.dropout))
     model.add(Dense(len(info_json['modulations']['names']), activation='softmax'))
 
-    #Once created, the model is then compiled, trained 
-    #and saved for further evaluation
+    # Once created, the model is then compiled, trained
+    # and saved for further evaluation
     model.compile(optimizer=config.optimizer, loss='sparse_categorical_crossentropy', metrics=['accuracy'])
     history = model.fit(data_train, target_train, validation_split=0.25, epochs=int(config.epochs), verbose=1,
                         callbacks=[WandbCallback(validation_data=(data_test, target_test))])
     model.save(str(join(rna_folder, 'rna-' + id + '.h5')))
     print("\nRNA saved.\n")
 
-    #A figure with a model representation is automatically saved!
+    # A figure with a model representation is automatically saved!
     plot_model(model, to_file=join(fig_folder, 'model-' + id + '.png'), show_shapes=True)
 
-    #Here is where we make the first evaluation of the RNA
+    # Here is where we make the first evaluation of the RNA
     loss, acc = model.evaluate(data_test, target_test, verbose=1)
     print('Test Accuracy: %.3f' % acc)
 
-    #Here, WANDB takes place and logs all metrics to the cloud
+    # Here, WANDB takes place and logs all metrics to the cloud
     metrics = {'accuracy': acc,
                'loss': loss,
                'dropout': config.dropout,
@@ -121,11 +124,11 @@ def train_rna(config):
                'id': id}
     wandb.log(metrics)
 
-    #Here we make a prediction using the test data...
+    # Here we make a prediction using the test data...
     print('Starting prediction')
     predict = model.predict_classes(data_test, verbose=1)
 
-    #And create a Confusion Matrix for a better visualization!
+    # And create a Confusion Matrix for a better visualization!
     print('\nConfusion Matrix:\n')
     confusion_matrix = tf.math.confusion_matrix(target_test, predict).numpy()
     confusion_matrix_normalized = np.around(
@@ -163,23 +166,23 @@ def train_rna(config):
     evaluate_rna(id=id)
 
 
-def evaluate_rna(id="foo", test_size=500): #Make a prediction using some samples to evaluate the RNA behavior
+def evaluate_rna(id="foo", test_size=500):  # Make a prediction using some samples to evaluate the RNA behavior
     rna_folder = pathlib.Path(join(os.getcwd(), 'rna'))
     fig_folder = pathlib.Path(join(os.getcwd(), "figures"))
     data_folder = pathlib.Path(join(os.getcwd(), "gr-data", "pickle"))
-    data_files = [f + ("_features.pickle") for f in info_json['modulations']['names']]
+    data_files = [f + "_features.pickle" for f in info_json['modulations']['names']]
 
-    if id == "foo": #If you do not specify a RNA id, it'll use the newest available in rna_folder
+    if id == "foo":  # If you do not specify a RNA id, it'll use the newest available in rna_folder
         aux = [f for f in os.listdir(rna_folder) if "rna" in f]
         rna_files = [join(str(rna_folder), item) for item in aux]
         latest_rna_model = max(rna_files, key=os.path.getctime)
         print("RNA ID not provided. Using RNA model with id {}, created at {} instead.\n".format(
             latest_rna_model.split("-")[1].split(".")[0], time.ctime(os.path.getmtime(latest_rna_model))))
 
-        model = load_model(latest_rna_model) #Loads the RNA model
+        model = load_model(latest_rna_model)  # Loads the RNA model
 
-        #For each modulation, radomnly loads the test_size samples 
-        #and predict the result to all SNR values
+        # For each modulation, radomnly loads the test_size samples
+        # and predict the result to all SNR values
         result = np.zeros((len(info_json['modulations']['names']), len(info_json['snr'])))
         for i, mod in enumerate(data_files):
             print("Evaluating {}".format(mod.split("_")[0]))
@@ -188,14 +191,14 @@ def evaluate_rna(id="foo", test_size=500): #Make a prediction using some samples
             for snr in range(len(data)):
                 random_samples = np.random.choice(data[snr][:].shape[0], test_size)
                 data_test = [data[snr][i] for i in random_samples]
-                data_test = normalize(data_test, norm='l2' )
+                data_test = normalize(data_test, norm='l2')
                 right_label = [info_json['modulations']['index'][i] for _ in range(len(data_test))]
                 predict = model.predict_classes(data_test)
                 accuracy = accuracy_score(right_label, predict)
                 result[i][snr] = accuracy
 
-        #Then, it creates an accuracy graphic, containing the 
-        #prediction result to all snr values and all modulations
+        # Then, it creates an accuracy graphic, containing the
+        # prediction result to all snr values and all modulations
         figure = plt.figure(figsize=(8, 4), dpi=150)
         plt.title("Accuracy")
         plt.ylabel("Right prediction")
@@ -209,7 +212,7 @@ def evaluate_rna(id="foo", test_size=500): #Make a prediction using some samples
 
         figure.clf()
         plt.close(figure)
-    else: #If you specify a RNA id, it will use it and make the exact same steps as the previous one
+    else:  # If you specify a RNA id, it will use it and make the exact same steps as the previous one
         rna = join(str(rna_folder), "rna-" + id + ".h5")
         model = load_model(rna)
         print("Using RNA with id {}.\n".format(id))
@@ -253,7 +256,7 @@ if __name__ == '__main__':
     parser.add_argument('--activation', action='store', dest='activation')
     arguments = parser.parse_args()
 
-    #WANDB hyperparameters setup
+    # WANDB hyperparameters setup
     hyperparameterDefaults = dict(
         dropout=round(float(arguments.dropout), 2),
         epochs=arguments.epochs,
@@ -266,5 +269,5 @@ if __name__ == '__main__':
     wandb.init(entity="gicsufpr", project="amcpy-team", config=hyperparameterDefaults)
     config = wandb.config
 
-    #evaluate_rna(id="3cabaed4")
+    # evaluate_rna(id="3cabaed4")
     train_rna(config)
