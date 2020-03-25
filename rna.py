@@ -42,18 +42,18 @@ def process_data():  # Prepare the data for the magic
 
     # Here each modulation file is loaded and all
     # frames to all SNR values are vertically stacked
-    for i, mod in enumerate(features_files):
+    for i, mod in enumerate(features_files):        
         print("Processing {} data".format(mod.split("_")[0]))
         with open(join(data_folder, mod), 'rb') as ft_handle:
             data = pickle.load(ft_handle)
 
         location = i * number_of_frames * number_of_snr
 
-        for snr in range(len(data)):
-            for frame in range(len(data[snr])):
+        for snr in range(len(data)):               
+            for frame in range(info_json['numberOfFrames']):
                 data_rna[location][:] = data[snr][frame][:]
                 location += 1
-
+    
     # An array containing the labels for
     # each modulation is then created...
     samples = number_of_frames * number_of_snr

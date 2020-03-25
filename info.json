@@ -1,6 +1,6 @@
 {
   "frameSize": 1024,
-  "numberOfFrames": 10000,
+  "numberOfFrames": 1000,
   "numberOfFeatures": 22,
   "modulations": {
     "names": [
