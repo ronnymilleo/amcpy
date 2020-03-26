@@ -7,10 +7,10 @@ from os.path import join
 import numpy as np
 
 with open("./info.json") as handle:
-    infoJson = json.load(handle)
+    info_json = json.load(handle)
 
-modulations = infoJson['modulations']['names']
-snr = list(map(int, infoJson['snr']))
+modulations = info_json['modulations']['names']
+snr = [info_json['snr']['values'][i] for i in info_json['snr']['using']]
 number_of_samples = 13109600  # Got from length of the dataset by SNR
 
 # Convert binary files into pickle files
@@ -24,7 +24,7 @@ for modulation in modulations:
                                           'binary_' + modulation + "(" + "{}".format(value) + ")"))
             data = np.fromfile(file_name, dtype=np.complex64)
         except FileNotFoundError:  # If exception is raised, then look for personal storage on Google Drive
-            file_name = pathlib.Path(join('C:\\Users\\ronny\\Google Drive\\Colab Notebooks',
+            file_name = pathlib.Path(join(os.getcwd,
                                           'gr-data',
                                           'binary',
                                           'binary_' + modulation + "(" + "{}".format(value) + ")"))
@@ -44,7 +44,7 @@ for modulation in modulations:
               + modulation + '({}) appended...'.format(value))
 
     # Save binary files in pickle (without delay)
-    with open(pathlib.Path(join('C:\\Users\\ronny\\Google Drive\\Colab Notebooks',
+    with open(pathlib.Path(join(os.getcwd(),
                                 'gr-data',
                                 'pickle',
                                 modulation + '.pickle')), 'wb') as handle:

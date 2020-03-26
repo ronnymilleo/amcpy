@@ -5,12 +5,12 @@ import json
 def calculate_features(input_signal):
 
     with open("./info.json") as handle:
-        infoJson = json.load(handle)    
+        info_json = json.load(handle)    
     
     result = []
 
-    for ft in infoJson['features']['using']:
-        aux = eval(infoJson['features']['functions'][str(ft)])
+    for ft in info_json['features']['using']:
+        aux = eval(info_json['features']['functions'][str(ft)])
         result.append(aux)
     
     return result

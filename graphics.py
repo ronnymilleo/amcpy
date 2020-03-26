@@ -9,16 +9,16 @@ import numpy as np
 
 # Open json file with parameters
 with open("./info.json") as handle:
-    infoJson = json.load(handle)
+    info_json = json.load(handle)
 
 # Config
-frame_size = infoJson['frameSize']
-number_of_modulations = len(infoJson['modulations']['index'])
-number_of_snr = len(infoJson['snr'])
-number_of_frames = infoJson['numberOfFrames']
-number_of_features = len(infoJson['features']['using'])
-modulation_names = infoJson['modulations']['names']
-feature_names = infoJson['features']['names']
+frame_size = info_json['frameSize']
+number_of_modulations = len(info_json['modulations']['index'])
+number_of_snr = len(info_json['snr']['using'])
+number_of_frames = info_json['numberOfFrames']
+number_of_features = len(info_json['features']['using'])
+modulation_names = info_json['modulations']['names']
+feature_names = info_json['features']['names']
 
 features = []
 for modulation in range(number_of_modulations):

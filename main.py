@@ -14,14 +14,14 @@ import scipy.io
 import features as ft
 
 with open("./info.json") as handle:
-    infoJson = json.load(handle)
+    info_json = json.load(handle)
 
 num_horses = 2  # Well, that's should be your horsepower... be careful
-frame_size = infoJson['frameSize']
-nb_of_frames = infoJson['numberOfFrames']
-nb_of_snr = len(infoJson['snr'])
-nb_of_features = len(infoJson['features']['using'])
-modulations = infoJson['modulations']['names']
+frame_size = info_json['frameSize']
+nb_of_frames = info_json['numberOfFrames']
+nb_of_snr = len(info_json['snr']['using'])
+nb_of_features = len(info_json['features']['using'])
+modulations = info_json['modulations']['names']
 
 
 def modulation_process(modulation, selection):
@@ -30,7 +30,8 @@ def modulation_process(modulation, selection):
 
     # Function to be threaded and processed in parallel
     def go_horse():
-        snr_array = np.linspace(-20, 20, 21)  # Let's make sure we're getting only the necessary SNR
+        #snr_array = np.linspace(-20, 20, 21)  # Let's make sure we're getting only the necessary SNR
+        snr_array = list(map(int, [info_json['snr']['values'][i] for i in info_json['snr']['using']]))
         while True:
             item = q.get()  # This line gets values from queue to evaluate
             if item is None:  # This line will run only when queue is empty (job done)
