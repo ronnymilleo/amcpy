@@ -29,7 +29,8 @@ with open("./info.json") as handle:
 # Config variables based on the JSON file
 number_of_frames = info_json['numberOfFrames']
 number_of_features = len(info_json['features']['using'])
-number_of_snr = len(info_json['snr'])
+number_of_snr = len(info_json['snr']['using'])
+snr_list = info_json['snr']['using']
 modulations = info_json['modulations']['names']
 
 
@@ -49,7 +50,7 @@ def process_data():  # Prepare the data for the magic
 
         location = i * number_of_frames * number_of_snr
 
-        for snr in range(len(data)):               
+        for snr in snr_list:               
             for frame in range(info_json['numberOfFrames']):
                 data_rna[location][:] = data[snr][frame][:]
                 location += 1
@@ -183,12 +184,12 @@ def evaluate_rna(id="foo", test_size=500):  # Make a prediction using some sampl
 
         # For each modulation, radomnly loads the test_size samples
         # and predict the result to all SNR values
-        result = np.zeros((len(info_json['modulations']['names']), len(info_json['snr'])))
+        result = np.zeros((len(info_json['modulations']['names']), len(info_json['snr']['using'])))
         for i, mod in enumerate(data_files):
             print("Evaluating {}".format(mod.split("_")[0]))
             with open(join(data_folder, mod), 'rb') as handle:
                 data = pickle.load(handle)
-            for snr in range(len(data)):
+            for j, snr in enumerate(snr_list):
                 random_samples = np.random.choice(data[snr][:].shape[0], test_size)
                 data_test = [data[snr][i] for i in random_samples]
                 data_test = normalize(data_test, norm='l2')
@@ -203,7 +204,7 @@ def evaluate_rna(id="foo", test_size=500):  # Make a prediction using some sampl
         plt.title("Accuracy")
         plt.ylabel("Right prediction")
         plt.xlabel("SNR [dB]")
-        plt.xticks(np.arange(len(info_json['snr'])), info_json['snr'])
+        plt.xticks(np.arange(len(info_json['snr']['using'])), [info_json['snr']['values'][i] for i in info_json['snr']['using']])
         for item in range(len(result)):
             plt.plot(result[item], label=info_json['modulations']['names'][item])
         plt.legend(loc='best')
@@ -217,25 +218,25 @@ def evaluate_rna(id="foo", test_size=500):  # Make a prediction using some sampl
         model = load_model(rna)
         print("Using RNA with id {}.\n".format(id))
 
-        result = np.zeros((len(info_json['modulations']['names']), len(info_json['snr'])))
+        result = np.zeros((len(info_json['modulations']['names']), len(info_json['snr']['using'])))
         for i, mod in enumerate(data_files):
             print("Evaluating {}".format(mod.split("_")[0]))
             with open(join(data_folder, mod), 'rb') as handle:
                 data = pickle.load(handle)
-            for snr in range(len(data)):
+            for j, snr in enumerate(snr_list):
                 random_samples = np.random.choice(data[snr][:].shape[0], test_size)
                 data_test = [data[snr][i] for i in random_samples]
                 data_test = normalize(data_test, norm='l2')
                 right_label = [info_json['modulations']['index'][i] for _ in range(len(data_test))]
                 predict = model.predict_classes(data_test)
                 accuracy = accuracy_score(right_label, predict)
-                result[i][snr] = accuracy
+                result[i][j] = accuracy
 
         figure = plt.figure(figsize=(8, 4), dpi=150)
         plt.title("Accuracy")
         plt.ylabel("Right prediction")
         plt.xlabel("SNR [dB]")
-        plt.xticks(np.arange(len(info_json['snr'])), info_json['snr'])
+        plt.xticks(np.arange(len(info_json['snr']['using'])), [info_json['snr']['values'][i] for i in info_json['snr']['using']])
         for item in range(len(result)):
             plt.plot(result[item], label=info_json['modulations']['names'][item])
         plt.legend(loc='best')
@@ -269,5 +270,5 @@ if __name__ == '__main__':
     wandb.init(project="amcpy-team", config=hyperparameterDefaults)
     config = wandb.config
 
-    # evaluate_rna(id="3cabaed4")
+    #evaluate_rna(id="bbb8f792")
     train_rna(config)
