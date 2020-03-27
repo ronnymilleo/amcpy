@@ -106,8 +106,8 @@ def modulation_process(modulation, selection):
         # Parsing signal
         print("Splitting data from GR...")
         parsed_signal = np.zeros((len(data_gr), nb_of_frames, frame_size), dtype=np.complex64)
-        for snr in range(len(data_gr)):
-            parsed_signal[snr][:] = np.split(data_gr[snr][1024:(nb_of_frames * frame_size) + 1024], nb_of_frames)
+        for i, snr in enumerate(info_json['snr']['using']):
+            parsed_signal[i][:] = np.split(data_gr[snr][1024:(nb_of_frames * frame_size) + 1024], nb_of_frames)
         print("{} data split into {} frames containing {} symbols.".format(modulation, nb_of_frames, frame_size))
 
     # Calculating features using threads...

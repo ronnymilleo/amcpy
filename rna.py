@@ -126,7 +126,7 @@ def train_rna(config):
     wandb.log(metrics)
 
     # Here we make a prediction using the test data...
-    print('Starting prediction')
+    print('\nStarting prediction')
     predict = model.predict_classes(data_test, verbose=1)
 
     # And create a Confusion Matrix for a better visualization!
@@ -172,12 +172,13 @@ def evaluate_rna(id="foo", test_size=500):  # Make a prediction using some sampl
     fig_folder = pathlib.Path(join(os.getcwd(), "figures"))
     data_folder = pathlib.Path(join(os.getcwd(), "gr-data", "pickle"))
     data_files = [f + "_features.pickle" for f in info_json['modulations']['names']]
+    print("\nStarting RNA evaluation by SNR.")
 
     if id == "foo":  # If you do not specify a RNA id, it'll use the newest available in rna_folder
         aux = [f for f in os.listdir(rna_folder) if "rna" in f]
         rna_files = [join(str(rna_folder), item) for item in aux]
         latest_rna_model = max(rna_files, key=os.path.getctime)
-        print("RNA ID not provided. Using RNA model with id {}, created at {} instead.\n".format(
+        print("\nRNA ID not provided. Using RNA model with id {}, created at {} instead.".format(
             latest_rna_model.split("-")[1].split(".")[0], time.ctime(os.path.getmtime(latest_rna_model))))
 
         model = load_model(latest_rna_model)  # Loads the RNA model
@@ -216,7 +217,7 @@ def evaluate_rna(id="foo", test_size=500):  # Make a prediction using some sampl
     else:  # If you specify a RNA id, it will use it and make the exact same steps as the previous one
         rna = join(str(rna_folder), "rna-" + id + ".h5")
         model = load_model(rna)
-        print("Using RNA with id {}.\n".format(id))
+        print("\nUsing RNA with id {}.".format(id))
 
         result = np.zeros((len(info_json['modulations']['names']), len(info_json['snr']['using'])))
         for i, mod in enumerate(data_files):
@@ -270,5 +271,5 @@ if __name__ == '__main__':
     wandb.init(project="amcpy-team", config=hyperparameterDefaults)
     config = wandb.config
 
-    #evaluate_rna(id="bbb8f792")
+    #evaluate_rna(id="69155c1a")
     train_rna(config)
