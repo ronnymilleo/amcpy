@@ -24,15 +24,15 @@ snr = 20
 gif_frame_duration = int(1000 / 25)  # milliseconds
 frame_size = 1024
 number_of_frames = 800
-modulations = ['BPSK', 'QPSK', 'PSK8', 'QAM16']
+modulations = ['BPSK', 'QPSK', 'PSK8', 'QAM16', 'QAM64', 'noise']
 for modulation in modulations:
     file_name = pathlib.Path(
-        join('local-test-data', 'binary_' + modulation + "(" + "{}".format(snr) + ")"))
+        join('gr-data', 'binary', 'binary_' + modulation + "(" + "{}".format(snr) + ")"))
 
     data = np.fromfile(file_name, dtype=np.complex64)
 
     frames = []
-    init_start = 256  # initial delay
+    init_start = 300 * 8  # initial delay
     init_end = init_start + frame_size
     init_x = np.linspace(init_start, init_end, frame_size)
     for new_step in range(0, frame_size * number_of_frames, frame_size):
