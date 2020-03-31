@@ -15,6 +15,7 @@ with open("./info.json") as handle:
 frame_size = info_json['frameSize']
 number_of_modulations = len(info_json['modulations']['index'])
 number_of_snr = len(info_json['snr']['using'])
+snr_list = info_json['snr']['using']
 number_of_frames = info_json['numberOfFrames']
 number_of_features = len(info_json['features']['using'])
 modulation_names = info_json['modulations']['names']
@@ -44,7 +45,7 @@ for m in range(number_of_modulations):
 print('Means and standard deviations calculated...')
 
 # SNR axis setup
-var = np.linspace(-20, 20, 21)
+var = np.linspace((snr_list[0] - 10) * 2, (snr_list[-1] - 10) * 2, number_of_snr)
 snr_array = np.ndarray([number_of_modulations, number_of_snr, number_of_frames, number_of_features])
 for m in range(number_of_modulations):
     for snr in range(number_of_snr):
@@ -66,7 +67,10 @@ for n in range(number_of_features):
     plt.xlabel('SNR')
     plt.ylabel('Value')
     plt.legend(modulation_names)
-    figure_name = pathlib.Path(join(os.getcwd(), 'figures', 'features', 'feature_' + str(n + 1) + '.png'))
+    figure_name = pathlib.Path(join(os.getcwd(), 'figures', 'features',
+                                    'feature_{}_SNR_({})_a_({})_means.png'.format(str(n + 1),
+                                                                                  (snr_list[0] - 10) * 2,
+                                                                                  (snr_list[-1] - 10) * 2)))
     plt.savefig(figure_name, figsize=(6.4, 3.6), dpi=300)
     plt.close()
     print('Plotting means of feature number {}'.format(n))
@@ -74,17 +78,20 @@ for n in range(number_of_features):
 # Plot graphics with all frames
 for n in range(number_of_features):
     plt.figure(num=n, figsize=(6.4, 3.6), dpi=300)
-    plt.plot(snr_array[0, :, 0:500, n], features[0][:, 0:500, n], '#03cffc', linewidth=1.0)  # BPSK
-    plt.plot(snr_array[1, :, 0:500, n], features[1][:, 0:500, n], '#6203fc', linewidth=1.0)  # QPSK
-    plt.plot(snr_array[2, :, 0:500, n], features[2][:, 0:500, n], '#be03fc', linewidth=1.0)  # PSK8
-    plt.plot(snr_array[3, :, 0:500, n], features[3][:, 0:500, n], '#fc0320', linewidth=1.0)  # QAM16
-    plt.plot(snr_array[4, :, 0:500, n], features[4][:, 0:500, n], 'k', linewidth=1.0)  # Noise
+    plt.plot(snr_array[0, :, 0:500, n], features[0][snr_list, 0:500, n], '#03cffc', linewidth=1.0)  # BPSK
+    plt.plot(snr_array[1, :, 0:500, n], features[1][snr_list, 0:500, n], '#6203fc', linewidth=1.0)  # QPSK
+    plt.plot(snr_array[2, :, 0:500, n], features[2][snr_list, 0:500, n], '#be03fc', linewidth=1.0)  # PSK8
+    plt.plot(snr_array[3, :, 0:500, n], features[3][snr_list, 0:500, n], '#fc0320', linewidth=1.0)  # QAM16
+    plt.plot(snr_array[4, :, 0:500, n], features[4][snr_list, 0:500, n], 'k', linewidth=1.0)  # Noise
     plt.xlabel('SNR')
     plt.ylabel('Value')
     plt.title('Feature ' + str(n + 1) + ' - ' + feature_names[n])
     # TODO: put modulation names in legend
     # plt.legend(modulation_names)
-    figure_name = pathlib.Path(join(os.getcwd(), 'figures', 'features', 'feature_' + str(n + 1) + '_all_frames.png'))
+    figure_name = pathlib.Path(join(os.getcwd(), 'figures', 'features',
+                                    'feature_{}_SNR_({})_a_({})_multiple_frames.png'.format(str(n + 1),
+                                                                                            (snr_list[0] - 10) * 2,
+                                                                                            (snr_list[-1] - 10) * 2)))
     plt.savefig(figure_name, figsize=(6.4, 3.6), dpi=300)
     plt.close()
     print('Plotting 500 frames of feature number {}'.format(n))
@@ -111,7 +118,10 @@ for n in range(number_of_features):
     plt.ylabel('Value with sigma')
     plt.title('Feature ' + str(n + 1) + ' - ' + feature_names[n])
     plt.legend(modulation_names)
-    figure_name = pathlib.Path(join(os.getcwd(), 'figures', 'features', 'feature_' + str(n + 1) + '_error_bar.png'))
+    figure_name = pathlib.Path(join(os.getcwd(), 'figures', 'features',
+                                    'feature_{}_SNR_({})_a_({})_means_with_stddev.png'.format(str(n + 1),
+                                                                                              (snr_list[0] - 10) * 2,
+                                                                                              (snr_list[-1] - 10) * 2)))
     plt.savefig(figure_name, figsize=(6.4, 3.6), dpi=300)
     plt.close()
     print('Plotting error bar of feature number {}'.format(n))
