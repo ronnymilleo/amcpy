@@ -2,7 +2,9 @@
   <dictionary name="ronny">
     <words>
       <w>bpsk</w>
+      <w>hyperparameters</w>
       <w>qpsk</w>
+      <w>wandb</w>
     </words>
   </dictionary>
 </component>
