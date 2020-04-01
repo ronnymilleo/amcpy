@@ -1,7 +1,7 @@
 {
-  "frameSize": 1024,
-  "numberOfFrames": 1000,
-  "numberOfFeatures": 22,
+	"frameSize": 1024,
+	"numberOfFrames": 1000,
+	"numberOfFeatures": 22,
 	"modulations": {
 		"names": [
 			"BPSK",
@@ -10,15 +10,15 @@
 			"QAM16",
 			"noise"
 		],
-		"index": [
-			0,
-			1,
-			2,
-			3,
-			4
-		]
+		"labels": {
+			"BPSK": 0,
+			"QPSK": 1,
+			"PSK8": 2,
+			"QAM16": 3,
+			"noise": 4
+		}
 	},
-  	"snr": {
+	"snr": {
 		"values":[
 			"-20",
 			"-18",
@@ -43,10 +43,27 @@
 			"20"
 			],
 			"using":[
+				0,
+				1,
+				2,
+				3,
+				4,
+				5,
+				6,
+				7,
+				8,
+				9,
 				10,
 				11,
 				12,
-				13	
+				13,
+				14,
+				15,
+				16,
+				17,
+				18,
+				19,
+				20	
 			]
 	},
 	"features":{
@@ -123,4 +140,4 @@
 			"22":"functions.ratioIQ(input_signal)"
 		}		
 	}
-}
+  }
