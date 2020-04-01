@@ -33,13 +33,13 @@ number_of_snr = len(info_json['snr']['using'])
 snr_list = info_json['snr']['using']
 modulations = info_json['modulations']['names']
 
-
 def process_data():  # Prepare the data for the magic
     data_folder = pathlib.Path(join(os.getcwd(), "gr-data", "pickle"))
-    features_files = [f + "_features.pickle" for f in info_json['modulations']['names']]
+    features_files = [f + "_features.pickle" for f in modulations]
 
     data_rna = np.zeros((number_of_frames * number_of_snr * len(features_files), number_of_features))
     target = []
+    samples = number_of_frames * number_of_snr
 
     # Here each modulation file is loaded and all
     # frames to all SNR values are vertically stacked
@@ -54,18 +54,19 @@ def process_data():  # Prepare the data for the magic
             for frame in range(info_json['numberOfFrames']):
                 data_rna[location][:] = data[snr][frame][:]
                 location += 1
-    
-    # An array containing the labels for
-    # each modulation is then created...
-    samples = number_of_frames * number_of_snr
-    for i, mod in enumerate(features_files):
+        # An array containing the labels for
+        # each modulation is then created...
         start = i * samples
         end = start + samples
         for _ in range(start, end):
             target.append(mod.split("_")[0])
-
+    
     # ...and encoded to labels ranging from 0 to 4 - 4 modulations + noise
-    target = LabelEncoder().fit_transform(target)
+    for mod in modulations:
+        for item in range(len(target)):        
+            if target[item] == mod:
+                target[item] =  info_json['modulations']['labels'][mod]
+    target = np.asarray(target)
 
     # Finally, the data is splitted into train and test
     # samples and normalized for a better learning
@@ -87,20 +88,19 @@ def train_rna(config):
     # Here is where the magic really happens! Check this out:
     model = Sequential()  # The model used is the sequential
     model.add(Dense(data_train.shape[1], activation="relu", kernel_initializer="he_normal",
-                    input_shape=(data_train.shape[1],)))  # It has a fully connected input layer
-    model.add(Dense(config.layer_size_hl1, activation=config.activation,
-                    kernel_initializer='he_normal'))  # With three others hidden layers
-    model.add(Dropout(config.dropout))  # And a dropout layer between them
+                    input_shape=(data_train.shape[1],)))                                    # It has a fully connected input layer
+    model.add(Dense(config.layer_size_hl1, activation=config.activation,                    # With three others hidden layers
+                    kernel_initializer='he_normal'))                                        # And a dropout layer between them
+    model.add(Dropout(config.dropout))                                                      
     model.add(Dense(config.layer_size_hl2, activation=config.activation, kernel_initializer='he_normal'))
     model.add(Dropout(config.dropout))
     model.add(Dense(config.layer_size_hl3, activation=config.activation, kernel_initializer='he_normal'))
-    model.add(Dropout(config.dropout))
-    model.add(Dense(len(info_json['modulations']['names']), activation='softmax'))
+    model.add(Dense(len(modulations), activation='softmax'))
 
     # Once created, the model is then compiled, trained
     # and saved for further evaluation
     model.compile(optimizer=config.optimizer, loss='sparse_categorical_crossentropy', metrics=['accuracy'])
-    history = model.fit(data_train, target_train, validation_split=0.25, epochs=int(config.epochs), verbose=1,
+    history = model.fit(data_train, target_train, validation_split=0.25, epochs=config.epochs, verbose=1,
                         callbacks=[WandbCallback(validation_data=(data_test, target_test))])
     model.save(str(join(rna_folder, 'rna-' + id + '.h5')))
     print("\nRNA saved.\n")
@@ -171,7 +171,7 @@ def evaluate_rna(id="foo", test_size=500):  # Make a prediction using some sampl
     rna_folder = pathlib.Path(join(os.getcwd(), 'rna'))
     fig_folder = pathlib.Path(join(os.getcwd(), "figures"))
     data_folder = pathlib.Path(join(os.getcwd(), "gr-data", "pickle"))
-    data_files = [f + "_features.pickle" for f in info_json['modulations']['names']]
+    data_files = [f + "_features.pickle" for f in modulations]
     print("\nStarting RNA evaluation by SNR.")
 
     if id == "foo":  # If you do not specify a RNA id, it'll use the newest available in rna_folder
@@ -185,7 +185,7 @@ def evaluate_rna(id="foo", test_size=500):  # Make a prediction using some sampl
 
         # For each modulation, radomnly loads the test_size samples
         # and predict the result to all SNR values
-        result = np.zeros((len(info_json['modulations']['names']), len(info_json['snr']['using'])))
+        result = np.zeros((len(modulations), number_of_snr))
         for i, mod in enumerate(data_files):
             print("Evaluating {}".format(mod.split("_")[0]))
             with open(join(data_folder, mod), 'rb') as handle:
@@ -194,7 +194,7 @@ def evaluate_rna(id="foo", test_size=500):  # Make a prediction using some sampl
                 random_samples = np.random.choice(data[snr][:].shape[0], test_size)
                 data_test = [data[snr][i] for i in random_samples]
                 data_test = normalize(data_test, norm='l2')
-                right_label = [info_json['modulations']['index'][i] for _ in range(len(data_test))]
+                right_label = [info_json['modulations']['labels'][mod.split("_")[0]] for _ in range(len(data_test))]
                 predict = model.predict_classes(data_test)
                 accuracy = accuracy_score(right_label, predict)
                 result[i][snr] = accuracy
@@ -205,9 +205,9 @@ def evaluate_rna(id="foo", test_size=500):  # Make a prediction using some sampl
         plt.title("Accuracy")
         plt.ylabel("Right prediction")
         plt.xlabel("SNR [dB]")
-        plt.xticks(np.arange(len(info_json['snr']['using'])), [info_json['snr']['values'][i] for i in info_json['snr']['using']])
+        plt.xticks(np.arange(number_of_snr), [info_json['snr']['values'][i] for i in info_json['snr']['using']])
         for item in range(len(result)):
-            plt.plot(result[item], label=info_json['modulations']['names'][item])
+            plt.plot(result[item], label=modulations[item])
         plt.legend(loc='best')
         plt.savefig(join(fig_folder, "accuracy-" + latest_rna_model.split("-")[1].split(".")[0] + ".png"),
                     bbox_inches='tight', dpi=300)
@@ -219,7 +219,7 @@ def evaluate_rna(id="foo", test_size=500):  # Make a prediction using some sampl
         model = load_model(rna)
         print("\nUsing RNA with id {}.".format(id))
 
-        result = np.zeros((len(info_json['modulations']['names']), len(info_json['snr']['using'])))
+        result = np.zeros((len(modulations), number_of_snr))
         for i, mod in enumerate(data_files):
             print("Evaluating {}".format(mod.split("_")[0]))
             with open(join(data_folder, mod), 'rb') as handle:
@@ -227,8 +227,8 @@ def evaluate_rna(id="foo", test_size=500):  # Make a prediction using some sampl
             for j, snr in enumerate(snr_list):
                 random_samples = np.random.choice(data[snr][:].shape[0], test_size)
                 data_test = [data[snr][i] for i in random_samples]
-                data_test = normalize(data_test, norm='l2')
-                right_label = [info_json['modulations']['index'][i] for _ in range(len(data_test))]
+                data_test = normalize(data_test, norm='l2')                
+                right_label = [info_json['modulations']['labels'][mod.split("_")[0]] for _ in range(len(data_test))]
                 predict = model.predict_classes(data_test)
                 accuracy = accuracy_score(right_label, predict)
                 result[i][j] = accuracy
@@ -237,9 +237,9 @@ def evaluate_rna(id="foo", test_size=500):  # Make a prediction using some sampl
         plt.title("Accuracy")
         plt.ylabel("Right prediction")
         plt.xlabel("SNR [dB]")
-        plt.xticks(np.arange(len(info_json['snr']['using'])), [info_json['snr']['values'][i] for i in info_json['snr']['using']])
+        plt.xticks(np.arange(number_of_snr), [info_json['snr']['values'][i] for i in info_json['snr']['using']])
         for item in range(len(result)):
-            plt.plot(result[item], label=info_json['modulations']['names'][item])
+            plt.plot(result[item], label=modulations[item])
         plt.legend(loc='best')
         plt.savefig(join(fig_folder, "accuracy-" + id + ".png"), bbox_inches='tight', dpi=300)
 
@@ -261,7 +261,7 @@ if __name__ == '__main__':
     # WANDB hyperparameters setup
     hyperparameterDefaults = dict(
         dropout=round(float(arguments.dropout), 2),
-        epochs=arguments.epochs,
+        epochs=int(arguments.epochs),
         optimizer=arguments.optimizer,
         activation=arguments.activation,
         layer_size_hl1=int(arguments.layer_size_hl1),
@@ -271,5 +271,5 @@ if __name__ == '__main__':
     wandb.init(project="amcpy-team", config=hyperparameterDefaults)
     config = wandb.config
 
-    #evaluate_rna(id="69155c1a")
+    #evaluate_rna()
     train_rna(config)
