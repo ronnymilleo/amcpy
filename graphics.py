@@ -13,7 +13,7 @@ with open("./info.json") as handle:
 
 # Config
 frame_size = info_json['frameSize']
-number_of_modulations = len(info_json['modulations']['index'])
+number_of_modulations = len(info_json['modulations']['names'])
 number_of_snr = len(info_json['snr']['using'])
 snr_list = info_json['snr']['using']
 number_of_frames = info_json['numberOfFrames']

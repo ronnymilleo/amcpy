@@ -87,14 +87,18 @@ def train_rna(config):
 
     # Here is where the magic really happens! Check this out:
     model = Sequential()  # The model used is the sequential
-    model.add(Dense(data_train.shape[1], activation="relu", kernel_initializer="he_normal",
+    model.add(Dense(data_train.shape[1], activation="relu", kernel_initializer=config.initializer,
                     input_shape=(data_train.shape[1],)))                                    # It has a fully connected input layer
     model.add(Dense(config.layer_size_hl1, activation=config.activation,                    # With three others hidden layers
-                    kernel_initializer='he_normal'))                                        # And a dropout layer between them
+                    kernel_initializer=config.initializer))                                        # And a dropout layer between them
     model.add(Dropout(config.dropout))                                                      
-    model.add(Dense(config.layer_size_hl2, activation=config.activation, kernel_initializer='he_normal'))
+    model.add(Dense(config.layer_size_hl2, activation=config.activation, kernel_initializer=config.initializer))
     model.add(Dropout(config.dropout))
-    model.add(Dense(config.layer_size_hl3, activation=config.activation, kernel_initializer='he_normal'))
+    model.add(Dense(config.layer_size_hl3, activation=config.activation, kernel_initializer=config.initializer))
+    model.add(Dropout(config.dropout))
+    model.add(Dense(config.layer_size_hl4, activation=config.activation, kernel_initializer=config.initializer))
+    model.add(Dropout(config.dropout))
+    model.add(Dense(config.layer_size_hl5, activation=config.activation, kernel_initializer=config.initializer))
     model.add(Dense(len(modulations), activation='softmax'))
 
     # Once created, the model is then compiled, trained
@@ -117,9 +121,12 @@ def train_rna(config):
                'loss': loss,
                'dropout': config.dropout,
                'epochs': config.epochs,
+               'initializer': config.initializer,
                'layer_syze_hl1': config.layer_size_hl1,
                'layer_syze_hl2': config.layer_size_hl2,
                'layer_syze_hl3': config.layer_size_hl3,
+               'layer_syze_hl4': config.layer_size_hl4,
+               'layer_syze_hl5': config.layer_size_hl5,
                'optimizer': config.optimizer,
                'activation': config.activation,
                'id': id}
@@ -252,9 +259,12 @@ if __name__ == '__main__':
     parser.add_argument('--dropout', action='store', dest='dropout')
     parser.add_argument('--epochs', action='store', dest='epochs')
     parser.add_argument('--optimizer', action='store', dest='optimizer')
+    parser.add_argument('--initializer', action='store', dest='initializer')
     parser.add_argument('--layer_size_hl1', action='store', dest='layer_size_hl1')
     parser.add_argument('--layer_size_hl2', action='store', dest='layer_size_hl2')
     parser.add_argument('--layer_size_hl3', action='store', dest='layer_size_hl3')
+    parser.add_argument('--layer_size_hl4', action='store', dest='layer_size_hl4')
+    parser.add_argument('--layer_size_hl5', action='store', dest='layer_size_hl5')
     parser.add_argument('--activation', action='store', dest='activation')
     arguments = parser.parse_args()
 
@@ -264,9 +274,12 @@ if __name__ == '__main__':
         epochs=int(arguments.epochs),
         optimizer=arguments.optimizer,
         activation=arguments.activation,
+        initializer=arguments.initializer,
         layer_size_hl1=int(arguments.layer_size_hl1),
         layer_size_hl2=int(arguments.layer_size_hl2),
-        layer_size_hl3=int(arguments.layer_size_hl3)
+        layer_size_hl3=int(arguments.layer_size_hl3),
+        layer_size_hl4=int(arguments.layer_size_hl4),
+        layer_size_hl5=int(arguments.layer_size_hl5)
     )
     wandb.init(project="amcpy-team", config=hyperparameterDefaults)
     config = wandb.config
