@@ -36,6 +36,7 @@ modulations = info_json['modulations']['names']
 def process_data():  # Prepare the data for the magic
     data_folder = pathlib.Path(join(os.getcwd(), "gr-data", "pickle"))
     features_files = [f + "_features.pickle" for f in modulations]
+    #features_files = ["awgn_" + f + "_features.pickle" for f in modulations]
 
     data_rna = np.zeros((number_of_frames * number_of_snr * len(features_files), number_of_features))
     target = []
@@ -177,8 +178,10 @@ def train_rna(config):
 def evaluate_rna(id="foo", test_size=500):  # Make a prediction using some samples to evaluate the RNA behavior
     rna_folder = pathlib.Path(join(os.getcwd(), 'rna'))
     fig_folder = pathlib.Path(join(os.getcwd(), "figures"))
-    data_folder = pathlib.Path(join(os.getcwd(), "gr-data", "pickle"))
-    data_files = [f + "_features.pickle" for f in modulations]
+    data_folder = pathlib.Path(join(os.getcwd(), "gr-data", "pickle"))    
+    data_files = [f + "_features.pickle" for f in modulations]               # Select here which dataset you want to use for testin:
+    #data_files = ["awgn_" + f + "_features.pickle" for f in modulations]    # AWGN or Rayleigh 
+
     print("\nStarting RNA evaluation by SNR.")
 
     if id == "foo":  # If you do not specify a RNA id, it'll use the newest available in rna_folder
