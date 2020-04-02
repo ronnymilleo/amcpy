@@ -5,13 +5,13 @@ metric:
 parameters:
   activation:
     values:
-      - relu
-      - sigmoid
-      - exponential
-      - tanh
-      - softmax
-      - sigmoid
-      - linear
+    - relu
+    - sigmoid
+    - exponential
+    - tanh
+    - softmax
+    - sigmoid
+    - linear
   dropout:
     distribution: uniform
     max: 0.5
@@ -32,9 +32,25 @@ parameters:
     distribution: int_uniform
     max: 100
     min: 10
+  layer_size_hl4:
+    distribution: int_uniform
+    max: 100
+    min: 10
+  layer_size_hl5:
+    distribution: int_uniform
+    max: 100
+    min: 10
   optimizer:
     values:
       - adam
       - sgd
       - rmsprop
+  initializer:
+    values:
+      - he_normal
+      - ones
+      - zeros
+      - random_normal
+      - glorot_normal
+      - glorot_uniform
 program: rna.py
