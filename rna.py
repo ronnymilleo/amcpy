@@ -35,8 +35,8 @@ modulations = info_json['modulations']['names']
 
 def process_data():  # Prepare the data for the magic
     data_folder = pathlib.Path(join(os.getcwd(), "gr-data", "pickle"))
-    features_files = [f + "_features.pickle" for f in modulations]
-    #features_files = ["awgn_" + f + "_features.pickle" for f in modulations]
+    #features_files = [f + "_features.pickle" for f in modulations]
+    features_files = ["awgn_" + f + "_features.pickle" for f in modulations]
 
     data_rna = np.zeros((number_of_frames * number_of_snr * len(features_files), number_of_features))
     target = []
@@ -45,7 +45,7 @@ def process_data():  # Prepare the data for the magic
     # Here each modulation file is loaded and all
     # frames to all SNR values are vertically stacked
     for i, mod in enumerate(features_files):        
-        print("Processing {} data".format(mod.split("_")[0]))
+        print("Processing {} data".format(mod.split("_")[1]))
         with open(join(data_folder, mod), 'rb') as ft_handle:
             data = pickle.load(ft_handle)
 
@@ -60,7 +60,7 @@ def process_data():  # Prepare the data for the magic
         start = i * samples
         end = start + samples
         for _ in range(start, end):
-            target.append(mod.split("_")[0])
+            target.append(mod.split("_")[1])
     
     # ...and encoded to labels ranging from 0 to 4 - 4 modulations + noise
     for mod in modulations:
@@ -179,8 +179,8 @@ def evaluate_rna(id="foo", test_size=500):  # Make a prediction using some sampl
     rna_folder = pathlib.Path(join(os.getcwd(), 'rna'))
     fig_folder = pathlib.Path(join(os.getcwd(), "figures"))
     data_folder = pathlib.Path(join(os.getcwd(), "gr-data", "pickle"))    
-    data_files = [f + "_features.pickle" for f in modulations]               # Select here which dataset you want to use for testin:
-    #data_files = ["awgn_" + f + "_features.pickle" for f in modulations]    # AWGN or Rayleigh 
+    #data_files = [f + "_features.pickle" for f in modulations]               # Select here which dataset you want to use for testin:
+    data_files = ["awgn_" + f + "_features.pickle" for f in modulations]    # AWGN or Rayleigh 
 
     print("\nStarting RNA evaluation by SNR.")
 
@@ -197,14 +197,14 @@ def evaluate_rna(id="foo", test_size=500):  # Make a prediction using some sampl
         # and predict the result to all SNR values
         result = np.zeros((len(modulations), number_of_snr))
         for i, mod in enumerate(data_files):
-            print("Evaluating {}".format(mod.split("_")[0]))
+            print("Evaluating {}".format(mod.split("_")[1]))
             with open(join(data_folder, mod), 'rb') as handle:
                 data = pickle.load(handle)
             for j, snr in enumerate(snr_list):
                 random_samples = np.random.choice(data[snr][:].shape[0], test_size)
                 data_test = [data[snr][i] for i in random_samples]
                 data_test = normalize(data_test, norm='l2')
-                right_label = [info_json['modulations']['labels'][mod.split("_")[0]] for _ in range(len(data_test))]
+                right_label = [info_json['modulations']['labels'][mod.split("_")[1]] for _ in range(len(data_test))]
                 predict = model.predict_classes(data_test)
                 accuracy = accuracy_score(right_label, predict)
                 result[i][snr] = accuracy
@@ -231,14 +231,14 @@ def evaluate_rna(id="foo", test_size=500):  # Make a prediction using some sampl
 
         result = np.zeros((len(modulations), number_of_snr))
         for i, mod in enumerate(data_files):
-            print("Evaluating {}".format(mod.split("_")[0]))
+            print("Evaluating {}".format(mod.split("_")[1]))
             with open(join(data_folder, mod), 'rb') as handle:
                 data = pickle.load(handle)
             for j, snr in enumerate(snr_list):
                 random_samples = np.random.choice(data[snr][:].shape[0], test_size)
                 data_test = [data[snr][i] for i in random_samples]
                 data_test = normalize(data_test, norm='l2')                
-                right_label = [info_json['modulations']['labels'][mod.split("_")[0]] for _ in range(len(data_test))]
+                right_label = [info_json['modulations']['labels'][mod.split("_")[1]] for _ in range(len(data_test))]
                 predict = model.predict_classes(data_test)
                 accuracy = accuracy_score(right_label, predict)
                 result[i][j] = accuracy
