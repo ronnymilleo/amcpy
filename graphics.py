@@ -20,15 +20,22 @@ number_of_frames = info_json['numberOfFrames']
 number_of_features = len(info_json['features']['using'])
 modulation_names = info_json['modulations']['names']
 feature_names = info_json['features']['names']
+data_set = info_json['dataSetForTraining']
 
 features = []
 for modulation in range(number_of_modulations):
     # Filename setup
-    pkl_file_name = pathlib.Path(join(os.getcwd(),
-                                      'gr-data',
-                                      'pickle',
-                                      modulation_names[modulation] + '_features.pickle'))
-
+    if data_set == "rayleigh":
+        pkl_file_name = pathlib.Path(join(os.getcwd(),
+                                        'gr-data',
+                                        'pickle',
+                                        modulation_names[modulation] + '_features.pickle'))
+    if data_set == "awgn":
+        pkl_file_name = pathlib.Path(join(os.getcwd(),
+                                        'gr-data',
+                                        'pickle',
+                                        modulation_names[modulation] + '_awgn_features.pickle'))
+                        
     # Load the pickle file
     with open(pkl_file_name, 'rb') as handle:
         features.append(pickle.load(handle))
@@ -67,10 +74,16 @@ for n in range(number_of_features):
     plt.xlabel('SNR')
     plt.ylabel('Value')
     plt.legend(modulation_names)
-    figure_name = pathlib.Path(join(os.getcwd(), 'figures', 'features',
-                                    'feature_{}_SNR_({})_a_({})_means.png'.format(str(n + 1),
-                                                                                  (snr_list[0] - 10) * 2,
-                                                                                  (snr_list[-1] - 10) * 2)))
+    if data_set == "rayleigh":
+        figure_name = pathlib.Path(join(os.getcwd(), 'figures', 'features',
+                                        'feature_{}_SNR_({})_a_({})_means.png'.format(str(n + 1),
+                                                                                    (snr_list[0] - 10) * 2,
+                                                                                    (snr_list[-1] - 10) * 2)))
+    if data_set == "awgn":
+        figure_name = pathlib.Path(join(os.getcwd(), 'figures', 'features',
+                                        'awgn_feature_{}_SNR_({})_a_({})_means.png'.format(str(n + 1),
+                                                                                    (snr_list[0] - 10) * 2,
+                                                                                    (snr_list[-1] - 10) * 2)))
     plt.savefig(figure_name, figsize=(6.4, 3.6), dpi=300)
     plt.close()
     print('Plotting means of feature number {}'.format(n))
@@ -88,8 +101,14 @@ for n in range(number_of_features):
     plt.title('Feature ' + str(n + 1) + ' - ' + feature_names[n])
     # TODO: put modulation names in legend
     # plt.legend(modulation_names)
-    figure_name = pathlib.Path(join(os.getcwd(), 'figures', 'features',
-                                    'feature_{}_SNR_({})_a_({})_multiple_frames.png'.format(str(n + 1),
+    if data_set == "rayleigh":
+        figure_name = pathlib.Path(join(os.getcwd(), 'figures', 'features',
+                                        'feature_{}_SNR_({})_a_({})_multiple_frames.png'.format(str(n + 1),
+                                                                                                (snr_list[0] - 10) * 2,
+                                                                                                (snr_list[-1] - 10) * 2)))
+    if data_set == "awgn":
+        figure_name = pathlib.Path(join(os.getcwd(), 'figures', 'features',
+                                    'awgn_feature_{}_SNR_({})_a_({})_multiple_frames.png'.format(str(n + 1),
                                                                                             (snr_list[0] - 10) * 2,
                                                                                             (snr_list[-1] - 10) * 2)))
     plt.savefig(figure_name, figsize=(6.4, 3.6), dpi=300)
@@ -118,10 +137,16 @@ for n in range(number_of_features):
     plt.ylabel('Value with sigma')
     plt.title('Feature ' + str(n + 1) + ' - ' + feature_names[n])
     plt.legend(modulation_names)
-    figure_name = pathlib.Path(join(os.getcwd(), 'figures', 'features',
-                                    'feature_{}_SNR_({})_a_({})_means_with_stddev.png'.format(str(n + 1),
-                                                                                              (snr_list[0] - 10) * 2,
-                                                                                              (snr_list[-1] - 10) * 2)))
+    if data_set == "rayleigh":
+        figure_name = pathlib.Path(join(os.getcwd(), 'figures', 'features',
+                                        'feature_{}_SNR_({})_a_({})_means_with_stddev.png'.format(str(n + 1),
+                                                                                                (snr_list[0] - 10) * 2,
+                                                                                                (snr_list[-1] - 10) * 2)))
+    if data_set == "awgn":
+        figure_name = pathlib.Path(join(os.getcwd(), 'figures', 'features',
+                                    'awgn_feature_{}_SNR_({})_a_({})_means_with_stddev.png'.format(str(n + 1),
+                                                                                            (snr_list[0] - 10) * 2,
+                                                                                            (snr_list[-1] - 10) * 2)))
     plt.savefig(figure_name, figsize=(6.4, 3.6), dpi=300)
     plt.close()
     print('Plotting error bar of feature number {}'.format(n))
