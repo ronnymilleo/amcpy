@@ -22,7 +22,7 @@ nb_of_frames = info_json['numberOfFrames']
 nb_of_snr = len(info_json['snr']['using'])
 nb_of_features = len(info_json['features']['using'])
 modulations = info_json['modulations']['names']
-
+data_set = info_json['dataSetForTraining']
 
 def modulation_process(modulation, selection):
     print('Starting new process...')
@@ -89,20 +89,35 @@ def modulation_process(modulation, selection):
     else:  # GNURadio generated dataset -- the best ever
         # Filename setup
         try:
-            gr_file_name = pathlib.Path(join(os.getcwd(), 'gr-data', "pickle", modulation + '.pickle'))
-            # Load the pickle file
-            with open(gr_file_name, 'rb') as gr_handle:  # Same as said at selection 1 -- duh
-                data_gr = pickle.load(gr_handle)
-            print(str(gr_file_name) + ' file loaded...')
+            if data_set == "rayleigh":
+                gr_file_name = pathlib.Path(join(os.getcwd(), 'gr-data', "pickle", modulation + '.pickle'))
+                # Load the pickle file
+                with open(gr_file_name, 'rb') as gr_handle:  # Same as said at selection 1 -- duh
+                    data_gr = pickle.load(gr_handle)
+                print(str(gr_file_name) + ' file loaded...')
+            if data_set == "awgn":
+                gr_file_name = pathlib.Path(join(os.getcwd(), 'gr-data', "pickle", modulation + '_awgn.pickle'))
+                # Load the pickle file
+                with open(gr_file_name, 'rb') as gr_handle:  # Same as said at selection 1 -- duh
+                    data_gr = pickle.load(gr_handle)
+                print(str(gr_file_name) + ' file loaded...')
         except FileNotFoundError:
-            gr_file_name = pathlib.Path(join('C:\\Users\\ronny\\Google Drive\\Colab Notebooks',
-                                             'gr-data',
-                                             "pickle",
-                                             modulation + '.pickle'))
-            with open(gr_file_name, 'rb') as gr_handle:  # Same as said at selection 1 -- duh
-                data_gr = pickle.load(gr_handle)
-            print(str(gr_file_name) + ' file loaded...')
-
+            if data_set == "rayleigh":
+                gr_file_name = pathlib.Path(join('C:\\Users\\ronny\\Google Drive\\Colab Notebooks',
+                                                'gr-data',
+                                                "pickle",
+                                                modulation + '.pickle'))
+                with open(gr_file_name, 'rb') as gr_handle:  # Same as said at selection 1 -- duh
+                    data_gr = pickle.load(gr_handle)
+                print(str(gr_file_name) + ' file loaded...')
+            if data_set == "awgn":
+                gr_file_name = pathlib.Path(join('C:\\Users\\ronny\\Google Drive\\Colab Notebooks',
+                                                'gr-data',
+                                                "pickle",
+                                                modulation + '_awgn.pickle'))
+                with open(gr_file_name, 'rb') as gr_handle:  # Same as said at selection 1 -- duh
+                    data_gr = pickle.load(gr_handle)
+                print(str(gr_file_name) + ' file loaded...')
         # Parsing signal
         print("Splitting data from GR...")
         parsed_signal = np.zeros((len(data_gr), nb_of_frames, frame_size), dtype=np.complex64)
@@ -147,17 +162,30 @@ def modulation_process(modulation, selection):
     else:
         try:
             # Save the samples in a pickle file
-            with open(pathlib.Path(join(os.getcwd(), "gr-data", "pickle", str(modulation) + "_features.pickle")),
-                      'wb') as gr_handle:
-                pickle.dump(features, gr_handle, protocol=pickle.HIGHEST_PROTOCOL)
+            if data_set == "rayleigh":
+                with open(pathlib.Path(join(os.getcwd(), "gr-data", "pickle", str(modulation) + "_features.pickle")),
+                        'wb') as gr_handle:
+                    pickle.dump(features, gr_handle, protocol=pickle.HIGHEST_PROTOCOL)
+            if data_set == "awgn":
+                with open(pathlib.Path(join(os.getcwd(), "gr-data", "pickle", str(modulation) + "_awgn_features.pickle")),
+                        'wb') as gr_handle:
+                    pickle.dump(features, gr_handle, protocol=pickle.HIGHEST_PROTOCOL)
         except FileNotFoundError:
             # Save the samples in a pickle file
-            with open(pathlib.Path(join('C:\\Users\\ronny\\Google Drive\\Colab Notebooks',
-                                        "gr-data",
-                                        "pickle",
-                                        str(modulation) + "_features.pickle")),
-                      'wb') as gr_handle:
-                pickle.dump(features, gr_handle, protocol=pickle.HIGHEST_PROTOCOL)
+            if data_set == "rayleigh":
+                with open(pathlib.Path(join('C:\\Users\\ronny\\Google Drive\\Colab Notebooks',
+                                            "gr-data",
+                                            "pickle",
+                                            str(modulation) + "_features.pickle")),
+                        'wb') as gr_handle:
+                    pickle.dump(features, gr_handle, protocol=pickle.HIGHEST_PROTOCOL)
+            if data_set == "awgn":
+                with open(pathlib.Path(join('C:\\Users\\ronny\\Google Drive\\Colab Notebooks',
+                                            "gr-data",
+                                            "pickle",
+                                            str(modulation) + "_awgn_features.pickle")),
+                        'wb') as gr_handle:
+                    pickle.dump(features, gr_handle, protocol=pickle.HIGHEST_PROTOCOL)
         print('File saved...')
 
     print('Process time in seconds: {0}'.format(time.process_time()))  # Horses benchmark!
