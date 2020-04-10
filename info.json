@@ -1,6 +1,6 @@
 {
 	"frameSize": 1024,
-	"numberOfFrames": 1000,
+	"numberOfFrames": 500,
 	"numberOfFeatures": 22,
 	"dataSetForTraining": "awgn",
 	"dataSetForTesting": "awgn",
@@ -47,11 +47,6 @@
 			"20"
 		],
 		"using": [
-			0,
-			1,
-			2,
-			3,
-			4,
 			5,
 			6,
 			7,

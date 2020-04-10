@@ -24,13 +24,14 @@ nb_of_features = len(info_json['features']['using'])
 modulations = info_json['modulations']['names']
 data_set = info_json['dataSetForTraining']
 
+
 def modulation_process(modulation, selection):
     print('Starting new process...')
     features = np.zeros((nb_of_snr, nb_of_frames, nb_of_features))
 
     # Function to be threaded and processed in parallel
     def go_horse():
-        #snr_array = np.linspace(-20, 20, 21)  # Let's make sure we're getting only the necessary SNR
+        # snr_array = np.linspace(-20, 20, 21)  # Let's make sure we're getting only the necessary SNR
         snr_array = list(map(int, [info_json['snr']['values'][i] for i in info_json['snr']['using']]))
         while True:
             item = q.get()  # This line gets values from queue to evaluate
@@ -71,22 +72,24 @@ def modulation_process(modulation, selection):
                     parsed_signal[snr, frames, samples] = (complex(signal[snr, frames, samples, 0],
                                                                    signal[snr, frames, samples, 1]))
         print('Signal parsed...')
-    elif selection == 2:  # MATLAB generated dataset with no ralei ='(
+    elif selection == 2:  # MATLAB generated dataset with no Rayleigh ='( (but it's de most reliable: updated 10/04)
         # Filename setup
-        mat_file_name = pathlib.Path(join(os.getcwd(), 'data', modulation + '_RAW.mat'))
+        mat_file_name = pathlib.Path(join(os.getcwd(), 'mat-data', modulation + '.mat'))
 
         # Dictionary to access variable inside MAT file
-        info = {'BPSK': 'pks2_signal',
-                'QPSK': 'pks4_signal',
-                'PSK8': 'pks8_signal',
-                'QAM16': 'qam16_signal'}
+        info = {'BPSK': 'signal_bpsk',
+                'QPSK': 'signal_qpsk',
+                'PSK8': 'signal_psk8',
+                'QAM16': 'signal_qam16',
+                'QAM64': 'signal_qam64',
+                'noise': 'signal_noise'}
 
         # Load MAT file
         data_mat = scipy.io.loadmat(mat_file_name)
-        print(str(mat_file_name) + ' file loaded and already parsed...')
+        print(str(mat_file_name) + ' file loaded...')
         parsed_signal = data_mat[info[modulation]]
         print('Signal parsed...')
-    else:  # GNURadio generated dataset -- the best ever
+    else:  # GNURadio generated dataset -- the best ever (not actually: updated 10/04)
         # Filename setup
         try:
             if data_set == "rayleigh":
@@ -104,17 +107,17 @@ def modulation_process(modulation, selection):
         except FileNotFoundError:
             if data_set == "rayleigh":
                 gr_file_name = pathlib.Path(join('C:\\Users\\ronny\\Google Drive\\Colab Notebooks',
-                                                'gr-data',
-                                                "pickle",
-                                                modulation + '.pickle'))
+                                                 'gr-data',
+                                                 "pickle",
+                                                 modulation + '.pickle'))
                 with open(gr_file_name, 'rb') as gr_handle:  # Same as said at selection 1 -- duh
                     data_gr = pickle.load(gr_handle)
                 print(str(gr_file_name) + ' file loaded...')
             if data_set == "awgn":
                 gr_file_name = pathlib.Path(join('C:\\Users\\ronny\\Google Drive\\Colab Notebooks',
-                                                'gr-data',
-                                                "pickle",
-                                                modulation + '_awgn.pickle'))
+                                                 'gr-data',
+                                                 "pickle",
+                                                 modulation + '_awgn.pickle'))
                 with open(gr_file_name, 'rb') as gr_handle:  # Same as said at selection 1 -- duh
                     data_gr = pickle.load(gr_handle)
                 print(str(gr_file_name) + ' file loaded...')
@@ -164,10 +167,11 @@ def modulation_process(modulation, selection):
             # Save the samples in a pickle file
             if data_set == "rayleigh":
                 with open(pathlib.Path(join(os.getcwd(), "gr-data", "pickle", str(modulation) + "_features.pickle")),
-                        'wb') as gr_handle:
+                          'wb') as gr_handle:
                     pickle.dump(features, gr_handle, protocol=pickle.HIGHEST_PROTOCOL)
             if data_set == "awgn":
-                with open(pathlib.Path(join(os.getcwd(), "gr-data", "pickle", str(modulation) + "_awgn_features.pickle")),
+                with open(
+                        pathlib.Path(join(os.getcwd(), "gr-data", "pickle", str(modulation) + "_awgn_features.pickle")),
                         'wb') as gr_handle:
                     pickle.dump(features, gr_handle, protocol=pickle.HIGHEST_PROTOCOL)
         except FileNotFoundError:
@@ -177,14 +181,14 @@ def modulation_process(modulation, selection):
                                             "gr-data",
                                             "pickle",
                                             str(modulation) + "_features.pickle")),
-                        'wb') as gr_handle:
+                          'wb') as gr_handle:
                     pickle.dump(features, gr_handle, protocol=pickle.HIGHEST_PROTOCOL)
             if data_set == "awgn":
                 with open(pathlib.Path(join('C:\\Users\\ronny\\Google Drive\\Colab Notebooks',
                                             "gr-data",
                                             "pickle",
                                             str(modulation) + "_awgn_features.pickle")),
-                        'wb') as gr_handle:
+                          'wb') as gr_handle:
                     pickle.dump(features, gr_handle, protocol=pickle.HIGHEST_PROTOCOL)
         print('File saved...')
 
@@ -193,7 +197,7 @@ def modulation_process(modulation, selection):
 
 
 if __name__ == '__main__':
-    dataset = 0  # Use GNURadio dataset
+    dataset = 2  # Use GNURadio dataset
     brothers = []  # Every brother of mine will have the same horsepower we set before
     for mod in modulations:
         new_slave = Process(target=modulation_process, args=(mod, dataset))
