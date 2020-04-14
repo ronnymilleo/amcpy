@@ -1,9 +1,14 @@
 <component name="ProjectDictionaryState">
   <dictionary name="ronny">
     <words>
+      <w>amcpy</w>
       <w>bpsk</w>
+      <w>crossentropy</w>
+      <w>hyperparameter</w>
       <w>hyperparameters</w>
       <w>qpsk</w>
+      <w>relu</w>
+      <w>softmax</w>
       <w>wandb</w>
     </words>
   </dictionary>

@@ -2,8 +2,8 @@
 	"frameSize": 1024,
 	"numberOfFrames": 500,
 	"numberOfFeatures": 22,
-	"dataSetForTraining": "awgn",
-	"dataSetForTesting": "awgn",
+	"dataSetForTraining": "matlab",
+	"dataSetForTesting": "matlab",
 	"modulations": {
 		"names": [
 			"BPSK",
