@@ -33,16 +33,25 @@ number_of_snr = len(info_json['snr']['using'])
 snr_list = info_json['snr']['using']
 modulations = info_json['modulations']['names']
 
+# Explicitly selects the dataset for TRAINING the RNA
+if info_json['dataSetForTraining'] == "awgn":
+    features_files = [f + "_awgn_features.pickle" for f in modulations]
+elif info_json['dataSetForTraining'] == "rayleigh":
+    features_files = [f + "_features.pickle" for f in modulations]
+elif info_json['dataSetForTraining'] == "matlab":
+    features_files = [f + "_features.pickle" for f in modulations]
+
+# Explicitly selects the dataset for TRAINING the RNA
+if info_json['dataSetForTraining'] == "awgn":
+    test_data_files = [f + "_awgn_features.pickle" for f in modulations]
+elif info_json['dataSetForTraining'] == "rayleigh":
+    test_data_files = [f + "_features.pickle" for f in modulations]
+elif info_json['dataSetForTraining'] == "matlab":
+    test_data_files = [f + "_features.pickle" for f in modulations]
+
 
 def process_data():  # Prepare the data for the magic
-    data_folder = pathlib.Path(join(os.getcwd(), "gr-data", "pickle"))
-
-    # Explicitly selects the dataset for TRAINING the RNA
-    if info_json['dataSetForTraining'] == "awgn":
-        features_files = [f + "_awgn_features.pickle" for f in modulations]
-    if info_json['dataSetForTraining'] == "rayleigh":
-        features_files = [f + "_features.pickle" for f in modulations]
-
+    data_folder = pathlib.Path(join(os.getcwd(), "mat-data", "pickle"))
     data_rna = np.zeros((number_of_frames * number_of_snr * len(features_files), number_of_features))
     target = []
     samples = number_of_frames * number_of_snr
@@ -58,8 +67,9 @@ def process_data():  # Prepare the data for the magic
 
         for snr in snr_list:
             for frame in range(info_json['numberOfFrames']):
-                data_rna[location][:] = data[snr][frame][:]
+                data_rna[location, :] = data[snr - (21 - number_of_snr)][frame][:]
                 location += 1
+
         # An array containing the labels for
         # each modulation is then created...
         start = i * samples
@@ -74,7 +84,7 @@ def process_data():  # Prepare the data for the magic
                 target[item] = info_json['modulations']['labels'][mod]
     target = np.asarray(target)
 
-    # Finally, the data is splitted into train and test
+    # Finally, the data is split into train and test
     # samples and normalized for a better learning
     data_train, data_test, target_train, target_test = train_test_split(data_rna, target, test_size=0.3)
     print("\nData shape:")
@@ -93,24 +103,22 @@ def train_rna(config):
 
     # Here is where the magic really happens! Check this out:
     model = Sequential()  # The model used is the sequential
+    # It has a fully connected input layer
     model.add(Dense(data_train.shape[1], activation="relu", kernel_initializer=config.initializer,
-                    input_shape=(data_train.shape[1],)))  # It has a fully connected input layer
-    model.add(Dense(config.layer_size_hl1, activation=config.activation,  # With three others hidden layers
-                    kernel_initializer=config.initializer))  # And a dropout layer between them
+                    input_shape=(data_train.shape[1],)))
+    # With three others hidden layers
+    model.add(Dense(config.layer_size_hl1, activation=config.activation, kernel_initializer=config.initializer))
+    # And a dropout layer between them
     model.add(Dropout(config.dropout))
     model.add(Dense(config.layer_size_hl2, activation=config.activation, kernel_initializer=config.initializer))
     model.add(Dropout(config.dropout))
     model.add(Dense(config.layer_size_hl3, activation=config.activation, kernel_initializer=config.initializer))
-    model.add(Dropout(config.dropout))
-    model.add(Dense(config.layer_size_hl4, activation=config.activation, kernel_initializer=config.initializer))
-    model.add(Dropout(config.dropout))
-    model.add(Dense(config.layer_size_hl5, activation=config.activation, kernel_initializer=config.initializer))
     model.add(Dense(len(modulations), activation='softmax'))
 
     # Once created, the model is then compiled, trained
     # and saved for further evaluation
     model.compile(optimizer=config.optimizer, loss='sparse_categorical_crossentropy', metrics=['accuracy'])
-    history = model.fit(data_train, target_train, validation_split=0.25, epochs=config.epochs, verbose=1,
+    history = model.fit(data_train, target_train, validation_split=0.3, epochs=config.epochs, verbose=1,
                         callbacks=[WandbCallback(validation_data=(data_test, target_test))])
     model.save(str(join(rna_folder, 'rna-' + id + '.h5')))
     print("\nRNA saved.\n")
@@ -131,8 +139,6 @@ def train_rna(config):
                'layer_syze_hl1': config.layer_size_hl1,
                'layer_syze_hl2': config.layer_size_hl2,
                'layer_syze_hl3': config.layer_size_hl3,
-               'layer_syze_hl4': config.layer_size_hl4,
-               'layer_syze_hl5': config.layer_size_hl5,
                'optimizer': config.optimizer,
                'activation': config.activation,
                'id': id}
@@ -183,13 +189,7 @@ def train_rna(config):
 def evaluate_rna(id="foo", test_size=500):  # Make a prediction using some samples to evaluate the RNA behavior
     rna_folder = pathlib.Path(join(os.getcwd(), 'rna'))
     fig_folder = pathlib.Path(join(os.getcwd(), "figures"))
-    data_folder = pathlib.Path(join(os.getcwd(), "gr-data", "pickle"))
-
-    # Explicitly selects the dataset for TRAINING the RNA
-    if info_json['dataSetForTraining'] == "awgn":
-        data_files = [f + "_awgn_features.pickle" for f in modulations]
-    if info_json['dataSetForTraining'] == "rayleigh":
-        data_files = [f + "_features.pickle" for f in modulations]
+    data_folder = pathlib.Path(join(os.getcwd(), "mat-data", "pickle"))
 
     print("\nStarting RNA evaluation by SNR.")
 
@@ -205,10 +205,10 @@ def evaluate_rna(id="foo", test_size=500):  # Make a prediction using some sampl
         # For each modulation, radomnly loads the test_size samples
         # and predict the result to all SNR values
         result = np.zeros((len(modulations), number_of_snr))
-        for i, mod in enumerate(data_files):
+        for i, mod in enumerate(test_data_files):
             print("Evaluating {}".format(mod.split("_")[0]))
-            with open(join(data_folder, mod), 'rb') as handle:
-                data = pickle.load(handle)
+            with open(join(data_folder, mod), 'rb') as evaluating_data:
+                data = pickle.load(evaluating_data)
             for j, snr in enumerate(snr_list):
                 random_samples = np.random.choice(data[snr][:].shape[0], test_size)
                 data_test = [data[snr][i] for i in random_samples]
@@ -239,13 +239,13 @@ def evaluate_rna(id="foo", test_size=500):  # Make a prediction using some sampl
         print("\nUsing RNA with id {}.".format(id))
 
         result = np.zeros((len(modulations), number_of_snr))
-        for i, mod in enumerate(data_files):
+        for i, mod in enumerate(test_data_files):
             print("Evaluating {}".format(mod.split("_")[0]))
-            with open(join(data_folder, mod), 'rb') as handle:
-                data = pickle.load(handle)
+            with open(join(data_folder, mod), 'rb') as evaluating_data:
+                data = pickle.load(evaluating_data)
             for j, snr in enumerate(snr_list):
-                random_samples = np.random.choice(data[snr][:].shape[0], test_size)
-                data_test = [data[snr][i] for i in random_samples]
+                random_samples = np.random.choice(data[snr - (21 - number_of_snr)][:].shape[0], test_size)
+                data_test = [data[snr - (21 - number_of_snr)][i] for i in random_samples]
                 data_test = normalize(data_test, norm='l2')
                 right_label = [info_json['modulations']['labels'][mod.split("_")[0]] for _ in range(len(data_test))]
                 predict = model.predict_classes(data_test)
@@ -275,8 +275,6 @@ if __name__ == '__main__':
     parser.add_argument('--layer_size_hl1', action='store', dest='layer_size_hl1')
     parser.add_argument('--layer_size_hl2', action='store', dest='layer_size_hl2')
     parser.add_argument('--layer_size_hl3', action='store', dest='layer_size_hl3')
-    parser.add_argument('--layer_size_hl4', action='store', dest='layer_size_hl4')
-    parser.add_argument('--layer_size_hl5', action='store', dest='layer_size_hl5')
     parser.add_argument('--activation', action='store', dest='activation')
     arguments = parser.parse_args()
 
@@ -289,9 +287,7 @@ if __name__ == '__main__':
         initializer=arguments.initializer,
         layer_size_hl1=int(arguments.layer_size_hl1),
         layer_size_hl2=int(arguments.layer_size_hl2),
-        layer_size_hl3=int(arguments.layer_size_hl3),
-        layer_size_hl4=int(arguments.layer_size_hl4),
-        layer_size_hl5=int(arguments.layer_size_hl5)
+        layer_size_hl3=int(arguments.layer_size_hl3)
     )
     wandb.init(project="amcpy-team", config=hyperparameterDefaults)
     config = wandb.config
