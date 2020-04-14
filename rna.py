@@ -15,7 +15,7 @@ import tensorflow as tf
 import wandb
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder, normalize
+from sklearn.preprocessing import normalize
 from tensorflow.keras import Sequential
 from tensorflow.keras.layers import Dense, Dropout
 from tensorflow.keras.models import load_model
@@ -33,6 +33,7 @@ number_of_snr = len(info_json['snr']['using'])
 snr_list = info_json['snr']['using']
 modulations = info_json['modulations']['names']
 
+
 def process_data():  # Prepare the data for the magic
     data_folder = pathlib.Path(join(os.getcwd(), "gr-data", "pickle"))
 
@@ -41,7 +42,7 @@ def process_data():  # Prepare the data for the magic
         features_files = [f + "_awgn_features.pickle" for f in modulations]
     if info_json['dataSetForTraining'] == "rayleigh":
         features_files = [f + "_features.pickle" for f in modulations]
-    
+
     data_rna = np.zeros((number_of_frames * number_of_snr * len(features_files), number_of_features))
     target = []
     samples = number_of_frames * number_of_snr
@@ -55,7 +56,7 @@ def process_data():  # Prepare the data for the magic
 
         location = i * number_of_frames * number_of_snr
 
-        for snr in snr_list:               
+        for snr in snr_list:
             for frame in range(info_json['numberOfFrames']):
                 data_rna[location][:] = data[snr][frame][:]
                 location += 1
@@ -65,12 +66,12 @@ def process_data():  # Prepare the data for the magic
         end = start + samples
         for _ in range(start, end):
             target.append(mod.split("_")[0])
-    
+
     # ...and encoded to labels ranging from 0 to 4 - 4 modulations + noise
     for mod in modulations:
-        for item in range(len(target)):        
+        for item in range(len(target)):
             if target[item] == mod:
-                target[item] =  info_json['modulations']['labels'][mod]
+                target[item] = info_json['modulations']['labels'][mod]
     target = np.asarray(target)
 
     # Finally, the data is splitted into train and test
@@ -93,10 +94,10 @@ def train_rna(config):
     # Here is where the magic really happens! Check this out:
     model = Sequential()  # The model used is the sequential
     model.add(Dense(data_train.shape[1], activation="relu", kernel_initializer=config.initializer,
-                    input_shape=(data_train.shape[1],)))                                    # It has a fully connected input layer
-    model.add(Dense(config.layer_size_hl1, activation=config.activation,                    # With three others hidden layers
-                    kernel_initializer=config.initializer))                                        # And a dropout layer between them
-    model.add(Dropout(config.dropout))                                                      
+                    input_shape=(data_train.shape[1],)))  # It has a fully connected input layer
+    model.add(Dense(config.layer_size_hl1, activation=config.activation,  # With three others hidden layers
+                    kernel_initializer=config.initializer))  # And a dropout layer between them
+    model.add(Dropout(config.dropout))
     model.add(Dense(config.layer_size_hl2, activation=config.activation, kernel_initializer=config.initializer))
     model.add(Dropout(config.dropout))
     model.add(Dense(config.layer_size_hl3, activation=config.activation, kernel_initializer=config.initializer))
@@ -182,7 +183,7 @@ def train_rna(config):
 def evaluate_rna(id="foo", test_size=500):  # Make a prediction using some samples to evaluate the RNA behavior
     rna_folder = pathlib.Path(join(os.getcwd(), 'rna'))
     fig_folder = pathlib.Path(join(os.getcwd(), "figures"))
-    data_folder = pathlib.Path(join(os.getcwd(), "gr-data", "pickle"))   
+    data_folder = pathlib.Path(join(os.getcwd(), "gr-data", "pickle"))
 
     # Explicitly selects the dataset for TRAINING the RNA
     if info_json['dataSetForTraining'] == "awgn":
@@ -245,7 +246,7 @@ def evaluate_rna(id="foo", test_size=500):  # Make a prediction using some sampl
             for j, snr in enumerate(snr_list):
                 random_samples = np.random.choice(data[snr][:].shape[0], test_size)
                 data_test = [data[snr][i] for i in random_samples]
-                data_test = normalize(data_test, norm='l2')                
+                data_test = normalize(data_test, norm='l2')
                 right_label = [info_json['modulations']['labels'][mod.split("_")[0]] for _ in range(len(data_test))]
                 predict = model.predict_classes(data_test)
                 accuracy = accuracy_score(right_label, predict)
@@ -295,5 +296,5 @@ if __name__ == '__main__':
     wandb.init(project="amcpy-team", config=hyperparameterDefaults)
     config = wandb.config
 
-    #evaluate_rna()
+    # evaluate_rna()
     train_rna(config)
