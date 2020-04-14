@@ -1,56 +1,42 @@
-method: random
+program: rna.py
+method: bayes
 metric:
+  name: val_accuracy
   goal: maximize
-  name: accuracy
 parameters:
-  activation:
-    values:
-    - relu
-    - sigmoid
-    - exponential
-    - tanh
-    - softmax
-    - sigmoid
-    - linear
-  dropout:
-    distribution: uniform
-    max: 0.5
-    min: 0.1
   epochs:
     distribution: int_uniform
-    max: 250
-    min: 25
-  layer_size_hl1:
-    distribution: int_uniform
-    max: 100
+    max: 50
     min: 10
-  layer_size_hl2:
-    distribution: int_uniform
-    max: 100
-    min: 10
-  layer_size_hl3:
-    distribution: int_uniform
-    max: 100
-    min: 10
-  layer_size_hl4:
-    distribution: int_uniform
-    max: 100
-    min: 10
-  layer_size_hl5:
-    distribution: int_uniform
-    max: 100
-    min: 10
+  dropout:
+    distribution: normal
+    mu: 0.3
+    sigma: 0.1
   optimizer:
+    distribution: categorical
     values:
       - adam
-      - sgd
       - rmsprop
+  activation:
+    distribution: categorical
+    values:
+      - exponential
+      - relu
+      - tanh
+      - sigmoid
+  layer_size_hl1:
+    distribution: int_uniform
+    max: 80
+    min: 22
+  layer_size_hl2:
+    distribution: int_uniform
+    max: 40
+    min: 12
+  layer_size_hl3:
+    distribution: int_uniform
+    max: 20
+    min: 6
   initializer:
     values:
       - he_normal
-      - ones
-      - zeros
       - random_normal
-      - glorot_normal
-      - glorot_uniform
-program: rna.py

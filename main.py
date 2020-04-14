@@ -79,7 +79,7 @@ def modulation_process(modulation, selection):
         # Dictionary to access variable inside MAT file
         info = {'BPSK': 'signal_bpsk',
                 'QPSK': 'signal_qpsk',
-                'PSK8': 'signal_psk8',
+                'PSK8': 'signal_8psk',
                 'QAM16': 'signal_qam16',
                 'QAM64': 'signal_qam64',
                 'noise': 'signal_noise'}
@@ -141,7 +141,7 @@ def modulation_process(modulation, selection):
     # Calculate features
     for snr in range(nb_of_snr):  # Every SNR
         for frames in range(nb_of_frames):  # of every frame wil be at the Queue waiting to be calculated
-            q.put([parsed_signal[snr, frames, :], snr, frames])  # Run!
+            q.put([parsed_signal[snr, frames, 0:frame_size], snr, frames])  # Run!
     q.join()  # This is the line that synchronizes everything, so threads that finish first will wait ok?
     print('Features calculated...')
 
@@ -159,7 +159,7 @@ def modulation_process(modulation, selection):
         print('File saved...')
     elif selection == 2:
         # Save the samples in a pickle file
-        with open(pathlib.Path(join(os.getcwd(), 'data', modulation + '_features_from_MAT.pickle')), 'wb') as m_handle:
+        with open(pathlib.Path(join(os.getcwd(), 'mat-data', modulation + '_features.pickle')), 'wb') as m_handle:
             pickle.dump(features, m_handle, protocol=pickle.HIGHEST_PROTOCOL)
         print('File saved...')
     else:
