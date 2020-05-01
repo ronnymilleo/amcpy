@@ -91,6 +91,7 @@
 			"Ratio of I/Q Components"
 		],
 		"using": [
+			0,
 			1,
 			2,
 			3,
@@ -111,32 +112,31 @@
 			18,
 			19,
 			20,
-			21,
-			22
+			21			
 		],
 		"functions": {
-			"1": "functions.std_deviation((abs(functions.instantaneous_phase(input_signal))))",
-			"2": "functions.std_deviation(functions.instantaneous_phase(input_signal))",
-			"3": "functions.std_deviation((abs(functions.instantaneous_frequency(input_signal))))",
-			"4": "functions.std_deviation(functions.instantaneous_frequency(input_signal))",
-			"5": "functions.kurtosis(functions.instantaneous_absolute(input_signal))",
-			"6": "functions.kurtosis(functions.instantaneous_frequency(input_signal))",
-			"7": "functions.gmax(input_signal)",
-			"8": "functions.mean_of_squared(functions.instantaneous_cn_absolute(input_signal))",
-			"9": "functions.std_deviation(abs(functions.instantaneous_cn_absolute(input_signal)))",
-			"10": "functions.std_deviation(functions.instantaneous_cn_absolute(input_signal))",
-			"11": "functions.cum20(input_signal)",
-			"12": "functions.cum21(input_signal)",
-			"13": "functions.cum40(input_signal)",
-			"14": "functions.cum41(input_signal)",
-			"15": "functions.cum42(input_signal)",
-			"16": "functions.cum60(input_signal)",
-			"17": "functions.cum61(input_signal)",
-			"18": "functions.cum62(input_signal)",
-			"19": "functions.cum63(input_signal)",
-			"20": "functions.meanAbsolute(input_signal)",
-			"21": "functions.sqrtAmplitude(input_signal)",
-			"22": "functions.ratioIQ(input_signal)"
+			"0": "functions.std_deviation((abs(functions.instantaneous_phase(input_signal))))",
+			"1": "functions.std_deviation(functions.instantaneous_phase(input_signal))",
+			"2": "functions.std_deviation((abs(functions.instantaneous_frequency(input_signal))))",
+			"3": "functions.std_deviation(functions.instantaneous_frequency(input_signal))",
+			"4": "functions.kurtosis(functions.instantaneous_absolute(input_signal))",
+			"5": "functions.kurtosis(functions.instantaneous_frequency(input_signal))",
+			"6": "functions.gmax(input_signal)",
+			"7": "functions.mean_of_squared(functions.instantaneous_cn_absolute(input_signal))",
+			"8": "functions.std_deviation(abs(functions.instantaneous_cn_absolute(input_signal)))",
+			"9": "functions.std_deviation(functions.instantaneous_cn_absolute(input_signal))",
+			"10": "functions.cum20(input_signal)",
+			"11": "functions.cum21(input_signal)",
+			"12": "functions.cum40(input_signal)",
+			"13": "functions.cum41(input_signal)",
+			"14": "functions.cum42(input_signal)",
+			"15": "functions.cum60(input_signal)",
+			"16": "functions.cum61(input_signal)",
+			"17": "functions.cum62(input_signal)",
+			"18": "functions.cum63(input_signal)",
+			"19": "functions.meanAbsolute(input_signal)",
+			"20": "functions.sqrtAmplitude(input_signal)",
+			"21": "functions.ratioIQ(input_signal)"
 		}
 	}
 }

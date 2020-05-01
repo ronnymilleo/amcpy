@@ -1,4 +1,5 @@
 import json
+import functions
 
 
 def calculate_features(input_signal):
