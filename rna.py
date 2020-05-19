@@ -120,8 +120,10 @@ def train_rna(config):
     model.compile(optimizer=config.optimizer, loss='sparse_categorical_crossentropy', metrics=['accuracy'])
     history = model.fit(data_train, target_train, validation_split=0.3, epochs=config.epochs, verbose=1,
                         callbacks=[WandbCallback(validation_data=(data_test, target_test))])
+    
     model.save(str(join(rna_folder, 'rna-' + id + '.h5')))
-    print("\nRNA saved.\n")
+    model.save_weights(str(join(rna_folder, 'weights-' + id + '.h5')))
+    print(join("\nRNA saved with id ", id, "\n").replace("\\", ""))
 
     # A figure with a model representation is automatically saved!
     plot_model(model, to_file=join(fig_folder, 'model-' + id + '.png'), show_shapes=True)
@@ -149,7 +151,7 @@ def train_rna(config):
     predict = model.predict_classes(data_test, verbose=1)
 
     # And create a Confusion Matrix for a better visualization!
-    print('\nConfusion Matrix:\n')
+    print('\nConfusion Matrix:')
     confusion_matrix = tf.math.confusion_matrix(target_test, predict).numpy()
     confusion_matrix_normalized = np.around(
         confusion_matrix.astype('float') / confusion_matrix.sum(axis=1)[:, np.newaxis],
@@ -292,5 +294,5 @@ if __name__ == '__main__':
     wandb.init(project="amcpy-team", config=hyperparameterDefaults)
     config = wandb.config
 
-    # evaluate_rna()
+    #evaluate_rna(id="96ec22de")
     train_rna(config)

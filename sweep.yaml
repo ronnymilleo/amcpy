@@ -6,12 +6,12 @@ metric:
 parameters:
   epochs:
     distribution: int_uniform
-    max: 50
-    min: 10
+    max: 500
+    min: 100
   dropout:
-    distribution: normal
-    mu: 0.3
-    sigma: 0.1
+    distribution: uniform
+    max: 0.5
+    min: 0.1
   optimizer:
     distribution: categorical
     values:
@@ -20,22 +20,20 @@ parameters:
   activation:
     distribution: categorical
     values:
-      - exponential
-      - relu
       - tanh
       - sigmoid
   layer_size_hl1:
     distribution: int_uniform
-    max: 80
-    min: 22
+    max: 500
+    min: 10
   layer_size_hl2:
     distribution: int_uniform
-    max: 40
-    min: 12
+    max: 500
+    min: 10
   layer_size_hl3:
     distribution: int_uniform
-    max: 20
-    min: 6
+    max: 500
+    min: 10
   initializer:
     values:
       - he_normal
