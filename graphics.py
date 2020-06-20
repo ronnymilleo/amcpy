@@ -22,31 +22,33 @@ modulation_names = info_json['modulations']['names']
 feature_names = info_json['features']['names']
 data_set = info_json['dataSetForTraining']
 
-features = []
+all_features = []
 for modulation in range(number_of_modulations):
     # Filename setup
     if data_set == "rayleigh":
         pkl_file_name = pathlib.Path(join(os.getcwd(),
-                                        'gr-data',
-                                        'pickle',
-                                        modulation_names[modulation] + '_features.pickle'))
-    if data_set == "awgn":
+                                          'gr-data',
+                                          'pickle',
+                                          modulation_names[modulation] + '_features.pickle'))
+    if data_set == "matlab":
         pkl_file_name = pathlib.Path(join(os.getcwd(),
-                                        'gr-data',
-                                        'pickle',
-                                        modulation_names[modulation] + '_awgn_features.pickle'))
-                        
+                                          'mat-data',
+                                          'pickle',
+                                          modulation_names[modulation] + '_features.pickle'))
+
     # Load the pickle file
     with open(pkl_file_name, 'rb') as handle:
-        features.append(pickle.load(handle))
+        all_features.append(pickle.load(handle))
     print('Files loaded...')
 
 # Calculate mean, min and max of features by SNR and by modulation
+features = np.ndarray([number_of_modulations, number_of_snr, number_of_frames, number_of_features])
 mean_features = np.ndarray([number_of_modulations, number_of_snr, number_of_frames, number_of_features])
 std_features = np.ndarray([number_of_modulations, number_of_snr, number_of_frames, number_of_features])
 for m in range(number_of_modulations):
     for snr in range(number_of_snr):
         for ft in range(number_of_features):
+            features[m, snr, :, ft] = all_features[m][snr, :, ft]
             mean_features[m, snr, :, ft] = np.mean(features[m][snr, :, ft])
             std_features[m, snr, :, ft] = np.std(features[m][snr, :, ft])
 print('Means and standard deviations calculated...')
@@ -69,7 +71,8 @@ for n in range(number_of_features):
     plt.plot(snr_array[1, :, n, n], mean_features[1, :, n, n], '#6203fc', linewidth=1.0)  # QPSK
     plt.plot(snr_array[2, :, n, n], mean_features[2, :, n, n], '#be03fc', linewidth=1.0)  # PSK8
     plt.plot(snr_array[3, :, n, n], mean_features[3, :, n, n], '#fc0320', linewidth=1.0)  # QAM16
-    plt.plot(snr_array[4, :, n, n], mean_features[4, :, n, n], 'k', linewidth=1.0)  # Noise
+    plt.plot(snr_array[4, :, n, n], mean_features[4, :, n, n], 'g', linewidth=1.0)  # QAM64
+    plt.plot(snr_array[5, :, n, n], mean_features[5, :, n, n], 'k', linewidth=1.0)  # Noise
     plt.title('Feature ' + str(n + 1) + ' - ' + feature_names[n])
     plt.xlabel('SNR')
     plt.ylabel('Value')
@@ -77,13 +80,13 @@ for n in range(number_of_features):
     if data_set == "rayleigh":
         figure_name = pathlib.Path(join(os.getcwd(), 'figures', 'features',
                                         'feature_{}_SNR_({})_a_({})_means.png'.format(str(n + 1),
-                                                                                    (snr_list[0] - 10) * 2,
-                                                                                    (snr_list[-1] - 10) * 2)))
-    if data_set == "awgn":
+                                                                                      (snr_list[0] - 10) * 2,
+                                                                                      (snr_list[-1] - 10) * 2)))
+    if data_set == "matlab":
         figure_name = pathlib.Path(join(os.getcwd(), 'figures', 'features',
-                                        'awgn_feature_{}_SNR_({})_a_({})_means.png'.format(str(n + 1),
-                                                                                    (snr_list[0] - 10) * 2,
-                                                                                    (snr_list[-1] - 10) * 2)))
+                                        'matlab_feature_{}_SNR_({})_a_({})_means.png'.format(str(n + 1),
+                                                                                             (snr_list[0] - 10) * 2,
+                                                                                             (snr_list[-1] - 10) * 2)))
     plt.savefig(figure_name, figsize=(6.4, 3.6), dpi=300)
     plt.close()
     print('Plotting means of feature number {}'.format(n))
@@ -91,11 +94,12 @@ for n in range(number_of_features):
 # Plot graphics with all frames
 for n in range(number_of_features):
     plt.figure(num=n, figsize=(6.4, 3.6), dpi=300)
-    plt.plot(snr_array[0, :, 0:500, n], features[0][snr_list, 0:500, n], '#03cffc', linewidth=1.0)  # BPSK
-    plt.plot(snr_array[1, :, 0:500, n], features[1][snr_list, 0:500, n], '#6203fc', linewidth=1.0)  # QPSK
-    plt.plot(snr_array[2, :, 0:500, n], features[2][snr_list, 0:500, n], '#be03fc', linewidth=1.0)  # PSK8
-    plt.plot(snr_array[3, :, 0:500, n], features[3][snr_list, 0:500, n], '#fc0320', linewidth=1.0)  # QAM16
-    plt.plot(snr_array[4, :, 0:500, n], features[4][snr_list, 0:500, n], 'k', linewidth=1.0)  # Noise
+    plt.plot(snr_array[0, :, :, n], features[0][:, :, n], '#03cffc', linewidth=1.0)  # BPSK
+    plt.plot(snr_array[1, :, :, n], features[1][:, :, n], '#6203fc', linewidth=1.0)  # QPSK
+    plt.plot(snr_array[2, :, :, n], features[2][:, :, n], '#be03fc', linewidth=1.0)  # PSK8
+    plt.plot(snr_array[3, :, :, n], features[3][:, :, n], '#fc0320', linewidth=1.0)  # QAM16
+    plt.plot(snr_array[4, :, :, n], features[4][:, :, n], 'g', linewidth=1.0)  # QAM64
+    plt.plot(snr_array[5, :, :, n], features[5][:, :, n], 'k', linewidth=1.0)  # Noise
     plt.xlabel('SNR')
     plt.ylabel('Value')
     plt.title('Feature ' + str(n + 1) + ' - ' + feature_names[n])
@@ -105,12 +109,15 @@ for n in range(number_of_features):
         figure_name = pathlib.Path(join(os.getcwd(), 'figures', 'features',
                                         'feature_{}_SNR_({})_a_({})_multiple_frames.png'.format(str(n + 1),
                                                                                                 (snr_list[0] - 10) * 2,
-                                                                                                (snr_list[-1] - 10) * 2)))
-    if data_set == "awgn":
+                                                                                                (snr_list[
+                                                                                                     -1] - 10) * 2)))
+    if data_set == "matlab":
         figure_name = pathlib.Path(join(os.getcwd(), 'figures', 'features',
-                                    'awgn_feature_{}_SNR_({})_a_({})_multiple_frames.png'.format(str(n + 1),
-                                                                                            (snr_list[0] - 10) * 2,
-                                                                                            (snr_list[-1] - 10) * 2)))
+                                        'matlab_feature_{}_SNR_({})_a_({})_multiple_frames.png'.format(str(n + 1),
+                                                                                                       (snr_list[
+                                                                                                            0] - 10) * 2,
+                                                                                                       (snr_list[
+                                                                                                            -1] - 10) * 2)))
     plt.savefig(figure_name, figsize=(6.4, 3.6), dpi=300)
     plt.close()
     print('Plotting 500 frames of feature number {}'.format(n))
@@ -132,7 +139,10 @@ for n in range(number_of_features):
                  yerr=std_features[3, :, n, n], color='#fc0320')
     plt.errorbar(snr_array[4, :, n, n],
                  mean_features[4, :, n, n],
-                 yerr=std_features[4, :, n, n], color='k')
+                 yerr=std_features[4, :, n, n], color='g')
+    plt.errorbar(snr_array[5, :, n, n],
+                 mean_features[5, :, n, n],
+                 yerr=std_features[5, :, n, n], color='k')
     plt.xlabel('SNR')
     plt.ylabel('Value with sigma')
     plt.title('Feature ' + str(n + 1) + ' - ' + feature_names[n])
@@ -140,13 +150,17 @@ for n in range(number_of_features):
     if data_set == "rayleigh":
         figure_name = pathlib.Path(join(os.getcwd(), 'figures', 'features',
                                         'feature_{}_SNR_({})_a_({})_means_with_stddev.png'.format(str(n + 1),
-                                                                                                (snr_list[0] - 10) * 2,
-                                                                                                (snr_list[-1] - 10) * 2)))
-    if data_set == "awgn":
+                                                                                                  (snr_list[
+                                                                                                       0] - 10) * 2,
+                                                                                                  (snr_list[
+                                                                                                       -1] - 10) * 2)))
+    if data_set == "matlab":
         figure_name = pathlib.Path(join(os.getcwd(), 'figures', 'features',
-                                    'awgn_feature_{}_SNR_({})_a_({})_means_with_stddev.png'.format(str(n + 1),
-                                                                                            (snr_list[0] - 10) * 2,
-                                                                                            (snr_list[-1] - 10) * 2)))
+                                        'matlab_feature_{}_SNR_({})_a_({})_means_with_stddev.png'.format(str(n + 1),
+                                                                                                         (snr_list[
+                                                                                                              0] - 10) * 2,
+                                                                                                         (snr_list[
+                                                                                                              -1] - 10) * 2)))
     plt.savefig(figure_name, figsize=(6.4, 3.6), dpi=300)
     plt.close()
     print('Plotting error bar of feature number {}'.format(n))

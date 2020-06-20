@@ -47,6 +47,11 @@ def instantaneous_phase(signal_input):
     return output
 
 
+def instantaneous_unwrapped_phase(signal_input):
+    output = np.unwrap(np.angle(signal_input))
+    return output
+
+
 def instantaneous_frequency(signal_input):
     output = 1 / (2 * np.pi) * np.diff(np.unwrap(np.angle(signal_input)))
     return output
