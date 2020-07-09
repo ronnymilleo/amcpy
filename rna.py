@@ -267,6 +267,10 @@ def evaluate_rna(id="foo", test_size=500):  # Make a prediction using some sampl
         figure.clf()
         plt.close(figure)
 
+        if not os.path.isfile(join(rna_folder, "weights-" + id + ".h5")):
+            print("Weights file not found. Saving it into RNA folder")
+            model.save_weights(str(join(rna_folder, 'weights-' + id + '.h5')))
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='RNA argument parser')
@@ -294,5 +298,5 @@ if __name__ == '__main__':
     wandb.init(project="amcpy-team", config=hyperparameterDefaults)
     config = wandb.config
 
-    #evaluate_rna(id="96ec22de")
+    evaluate_rna(id="96ec22de")
     train_rna(config)

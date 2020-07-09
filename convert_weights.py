@@ -5,7 +5,7 @@ from os.path import join
 import numpy as np
 
 path = "C:\\Users\\adeni\\Documents\\Mestrado\\amcpy\\rna"
-weights = "weights-79726ae8.h5"
+weights = "weights-96ec22de.h5"
 
 with h5py.File(join(path,weights), "r") as f:
     main_groups = f.keys()
