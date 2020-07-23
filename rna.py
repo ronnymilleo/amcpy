@@ -298,5 +298,5 @@ if __name__ == '__main__':
     wandb.init(project="amcpy-team", config=hyperparameterDefaults)
     config = wandb.config
 
-    evaluate_rna(id="96ec22de")
+    #evaluate_rna(id="96ec22de")
     train_rna(config)

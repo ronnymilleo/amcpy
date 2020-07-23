@@ -44,6 +44,8 @@ def plot_ft_histogram(option):
             with open(join(data_folder, mod), 'rb') as ft_handle:
                 data = pickle.load(ft_handle)
 
+            report = open("report_" + str(mod.split("_")[0]) + ".txt", 'w+')
+
             for j,snr in enumerate(snr_list):
                 for feature in range(number_of_features):
                     ft = []
@@ -59,7 +61,11 @@ def plot_ft_histogram(option):
                     plt.ylim(ymax=np.ceil(maxfreq / 10) * 10 if maxfreq % 10 else maxfreq + 10)
                     plt.savefig(join(fig_folder, 'histogram', 'histogram_specific_{}_{}dB_{}'.format(feature,snr_values[snr], mod.split('_')[0]) + '.png'), bbox_inches='tight', dpi=300)
                     plt.clf()
-        
+                    
+                    report.write("Feature:{} - SNR:{}db - Max:{} - Min:{}\n".format(feature,snr_values[snr], str(max(ft)), str(min(ft))))
+
+            report.close()
+
     elif option == 2:
         for i, mod in enumerate(features_files):
             print("Processing {} data".format(mod.split("_")[0]))

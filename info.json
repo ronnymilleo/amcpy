@@ -1,6 +1,6 @@
 {
 	"frameSize": 2048,
-	"numberOfFrames": 500,
+	"numberOfFrames": 1000,
 	"numberOfFeatures": 22,
 	"dataSetForTraining": "matlab",
 	"dataSetForTesting": "matlab",
