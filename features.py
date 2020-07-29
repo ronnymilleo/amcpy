@@ -52,7 +52,7 @@ def plot_ft_histogram(option):
                     for frame in range(number_of_frames):
                         ft.append(data[j][frame][feature])
                     
-                    """ n, bins, patches = plt.hist(x=ft, bins='auto', color='#0504aa', alpha=0.7, rwidth=0.85)
+                    n, bins, patches = plt.hist(x=ft, bins='auto', color='#0504aa', alpha=0.7, rwidth=0.85)
                     plt.grid(axis='y', alpha=0.75)
                     plt.xlabel('Value')
                     plt.ylabel('Frequency')
@@ -60,9 +60,9 @@ def plot_ft_histogram(option):
                     maxfreq = n.max()
                     plt.ylim(ymax=np.ceil(maxfreq / 10) * 10 if maxfreq % 10 else maxfreq + 10)
                     plt.savefig(join(fig_folder, 'histogram', 'histogram_specific_{}_{}dB_{}'.format(feature,snr_values[snr], mod.split('_')[0]) + '.png'), bbox_inches='tight', dpi=300)
-                    plt.clf() """
+                    plt.clf()
                     
-                    report.write("Feature:{} - SNR:{}dB - Max:{} - Min:{}\n".format(feature,snr_values[snr], str(max(ft)), str(min(ft))))
+                    report.write("Feature:{} - SNR:{}db - Max:{} - Min:{}\n".format(feature,snr_values[snr], str(max(ft)), str(min(ft))))
 
             report.close()
 
