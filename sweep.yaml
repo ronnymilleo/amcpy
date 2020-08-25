@@ -24,15 +24,15 @@ parameters:
       - sigmoid
   layer_size_hl1:
     distribution: int_uniform
-    max: 100
+    max: 500
     min: 10
   layer_size_hl2:
     distribution: int_uniform
-    max: 100
+    max: 500
     min: 10
   layer_size_hl3:
     distribution: int_uniform
-    max: 100
+    max: 500
     min: 10
   initializer:
     values:

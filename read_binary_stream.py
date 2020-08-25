@@ -22,27 +22,27 @@ for modulation in modulations:
         try:  # Look for file on default folder
             if data_set == "rayleigh":
                 file_name = pathlib.Path(join(os.getcwd(),
-                                            'gr-data',
-                                            'binary',
-                                            'binary_' + modulation + "(" + "{}".format(value) + ")"))
+                                              'gr-data',
+                                              'binary',
+                                              'binary_' + modulation + "(" + "{}".format(value) + ")"))
                 data = np.fromfile(file_name, dtype=np.complex64)
             if data_set == "awgn":
                 file_name = pathlib.Path(join(os.getcwd(),
-                                            'gr-data',
-                                            'binary',
-                                            'binary_awgn_' + modulation + "(" + "{}".format(value) + ")"))
+                                              'gr-data',
+                                              'binary',
+                                              'binary_awgn_' + modulation + "(" + "{}".format(value) + ")"))
                 data = np.fromfile(file_name, dtype=np.complex64)
         except FileNotFoundError:  # If exception is raised, then look for personal storage on Google Drive
             if data_set == "rayleigh":
                 file_name = pathlib.Path(join('C:\\Users\\ronny\\Google Drive\\Colab Notebooks',
-                                            'gr-data',
-                                            'binary',
-                                            'binary_' + modulation + "(" + "{}".format(value) + ")"))
+                                              'gr-data',
+                                              'binary',
+                                              'binary_' + modulation + "(" + "{}".format(value) + ")"))
             if data_set == "awgn":
                 file_name = pathlib.Path(join('C:\\Users\\ronny\\Google Drive\\Colab Notebooks',
-                                            'gr-data',
-                                            'binary',
-                                            'binary_awgn_' + modulation + "(" + "{}".format(value) + ")"))
+                                              'gr-data',
+                                              'binary',
+                                              'binary_awgn_' + modulation + "(" + "{}".format(value) + ")"))
         try:
             # Complex64 because it's float32 on I and Q
             data = np.fromfile(file_name, dtype=np.complex64)
@@ -59,14 +59,14 @@ for modulation in modulations:
               + modulation + '({}) appended...'.format(value))
 
     # Save binary files in pickle (without delay)
-    if data_set == "rayleigh":        
+    if data_set == "rayleigh":
         with open(pathlib.Path(join(os.getcwd(),
                                     'gr-data',
                                     'pickle',
                                     modulation + '.pickle')), 'wb') as handle:
             pickle.dump(signal, handle, protocol=pickle.HIGHEST_PROTOCOL)
         print(modulation + ' file saved...')
-    if data_set == "awgn":        
+    if data_set == "awgn":
         with open(pathlib.Path(join(os.getcwd(),
                                     'gr-data',
                                     'pickle',
@@ -75,6 +75,8 @@ for modulation in modulations:
         print(modulation + ' file saved...')
 
 if not data_set == info_json['dataSetForTesting']:
-    print(colored('Warning:', 'yellow'), 
-    "dasets for testing and training are different! You must run this code again changing the option in Training, letting it equal for Testing.")
+    print(colored('Warning:', 'yellow'),
+          "dasets for testing and training are different! "
+          "You must run this code again changing the option in Training, "
+          "letting it equal for Testing.")
 print('Finished.')
