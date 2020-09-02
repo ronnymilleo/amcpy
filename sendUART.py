@@ -9,7 +9,7 @@ import numpy as np
 import scipy.io
 import serial
 
-isTest = 1
+isTest = 0
 
 with open("./info.json") as handle:
     info_json = json.load(handle)
@@ -37,6 +37,12 @@ parsed_QAM16_signal = data_mat[info[modulations[3]]]
 parsed_QAM64_signal = data_mat[info[modulations[4]]]
 parsed_noise_signal = data_mat[info[modulations[5]]]
 
+inst_abs = np.transpose(np.array(abs(parsed_BPSK_signal[0, 0, 0:1024]), dtype=np.float32, ndmin=2))
+inst_phase = np.transpose(np.array(np.angle(parsed_BPSK_signal[0, 0, 0:1024]), dtype=np.float32, ndmin=2))
+inst_freq = np.transpose(
+    np.array(1 / (2 * np.pi) * np.diff(np.unwrap(np.angle(parsed_BPSK_signal[0, 0, 0:1024]))), dtype=np.float32,
+             ndmin=2))
+
 if isTest == 0:
     # Setup UART COM on Windows
     ser = serial.Serial(port='COM3', baudrate=115200, parity='N', bytesize=8, stopbits=1, timeout=1)
@@ -44,24 +50,24 @@ if isTest == 0:
     # Write to UART
     print('Transmitting...')
     for point in range(0, 1024):
-        binary = struct.pack('<f', np.real(parsed_BPSK_signal[15, 0, point]))
+        binary = struct.pack('<f', np.real(parsed_BPSK_signal[0, 0, point]))
         ser.write(binary)
-        binary = struct.pack('<f', np.imag(parsed_BPSK_signal[15, 0, point]))
+        binary = struct.pack('<f', np.imag(parsed_BPSK_signal[0, 0, point]))
         ser.write(binary)
 
     # Create string to receive echo data
     string = ""
-    # Wait for data to be returned
-    # while True:
-    #     char = ser.read().decode(encoding="utf-8")
-    #     string = string + char
-    #     if len(string) == 2048:
-    #         break
-    #     if char == '&':  # End of transmission char (by Ronny)
-    #         break
-    # print(string)
 
-    print('Receiving...')
+    print('Receiving timings...')
+    # Wait for data to be returned
+    while True:
+        char = ser.read().decode(encoding="utf-8")
+        string = string + char
+        if char == '&':  # End of transmission char (by Ronny)
+            break
+    print(string)
+
+    print('Receiving data...')
     data = []
     start = 0
     while True:
@@ -75,7 +81,8 @@ if isTest == 0:
         elif start == 1:
             data.append(a)
 
-    if len(data) == 2048:
+    received = []
+    if len(data) == 2048:  # Echo
         new_data = b''.join(data)
         real = []
         imag = []
@@ -91,15 +98,19 @@ if isTest == 0:
 
         # Errors
         for i in range(0, 1024):
-            err_real[i] = np.real(parsed_BPSK_signal[15, 0, i]) - real_n[i]
-            err_imag[i] = np.imag(parsed_BPSK_signal[15, 0, i]) - imag_n[i]
-    else:
+            err_real[i] = np.real(parsed_BPSK_signal[0, 0, i]) - real_n[i]
+            err_imag[i] = np.imag(parsed_BPSK_signal[0, 0, i]) - imag_n[i]
+    else:  # Data
         new_data = b''.join(data)
-        inst_value = []
-
         for x in range(0, 4096, 4):
-            inst_value.append(struct.unpack('<f', new_data[x:x + 4]))
+            received.append(struct.unpack('<f', new_data[x:x + 4]))
 
-        inst_value = np.array(inst_value, dtype=np.float32)
-        plt.plot(inst_value[0:128])
+        received = np.array(received, dtype=np.float32)
+        plt.plot(received[0:128])
         plt.show()
+
+    err_abs_vector = inst_abs - received
+    plt.plot(err_abs_vector[0:128])
+    plt.show()
+    err_phase_vector = inst_phase - received
+    #  err_freq_vector = inst_freq - received
