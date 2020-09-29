@@ -147,26 +147,26 @@ if isTest == 0:
                 plt.show()
 
     err_abs_vector = inst_abs - rx_inst_abs
-    print(np.max(err_abs_vector))
+    print('Instantaneous absolute max error: ' + np.max(err_abs_vector))
     plt.plot(err_abs_vector)
     plt.show()
 
     err_phase_vector = inst_phase - rx_inst_phase
-    print(np.max(err_phase_vector))
+    print('Instantaneous phase max error: ' + np.max(err_phase_vector))
     plt.plot(err_phase_vector)
     plt.show()
 
     err_unwrapped_phase_vector = inst_unwrapped_phase - rx_inst_unwrapped_phase
-    print(np.max(err_unwrapped_phase_vector))
+    print('Instantaneous unwrapped phase max error: ' + np.max(err_unwrapped_phase_vector))
     plt.plot(err_unwrapped_phase_vector)
     plt.show()
 
     err_freq_vector = inst_freq[0:1023] - rx_inst_freq[0:1023]
-    print(np.max(err_freq_vector))
+    print('Instantaneous frequency max error: ' + np.max(err_freq_vector))
     plt.plot(err_freq_vector)
     plt.show()
 
     err_cn_abs_vector = inst_cn_abs - rx_inst_cn_abs
-    print(np.max(err_cn_abs_vector))
+    print('Instantaneous CN absolute max error: ' + np.max(err_cn_abs_vector))
     plt.plot(err_cn_abs_vector)
     plt.show()
