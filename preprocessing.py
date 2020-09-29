@@ -68,4 +68,4 @@ def preprocess_data():  # Prepare the data for the magic
     # Remove mean and variance from data_test using the same values (based on theoretical background)
     standardised_data_test = scaler.transform(X_test)
 
-    return standardised_data_train, standardised_data_test, y_train, y_test
+    return standardised_data_train, standardised_data_test, y_train, y_test, scaler

@@ -83,7 +83,6 @@ def create_model(cfg: HyperParameter) -> Sequential:  # Return sequential model
 
 
 def train_rna(cfg: HyperParameter):
-    X_train, X_test, y_train, y_test = preprocess_data()
     rna_folder = pathlib.Path(join(os.getcwd(), 'rna'))
     fig_folder = pathlib.Path(join(os.getcwd(), "figures"))
     new_id = str(uuid.uuid1()).split('-')[0]  # Generates a unique id to each RNA created
@@ -176,7 +175,7 @@ def train_rna(cfg: HyperParameter):
     plt.close(figure)
 
 
-def evaluate_rna(input_id=' ', test_size=500):  # Make a prediction using some samples to evaluate the RNA behavior
+def evaluate_rna(input_id=' '):  # Make a prediction using some samples
     rna_folder = pathlib.Path(join(os.getcwd(), 'rna'))
     fig_folder = pathlib.Path(join(os.getcwd(), "figures"))
     data_folder = pathlib.Path(join(os.getcwd(), "mat-data", "pickle"))
@@ -204,17 +203,15 @@ def evaluate_rna(input_id=' ', test_size=500):  # Make a prediction using some s
         print("Evaluating {}".format(mod.split("_")[0]))
         with open(join(data_folder, mod), 'rb') as evaluating_data:
             data = pickle.load(evaluating_data)
-        for snr in snr_list:
-            random_samples = np.random.choice(data[snr - (21 - number_of_snr)][:].shape[0], test_size)
-            X_test = [data[snr - (21 - number_of_snr)][i] for i in random_samples]
-            # Instantiate StandardScaler
-            scaler = StandardScaler()
+        for j, snr in enumerate(snr_list):
+            X_test_2 = data[j, :]
             # Fit into data used for training, results are means and variances used to standardise the data
-            X_test = scaler.fit_transform(X_test)
-            right_label = [info_json['modulations']['labels'][mod.split("_")[0]] for _ in range(len(X_test))]
-            predict = np.argmax(model.predict(X_test), axis=-1)
+            X_test_2 = scaler.transform(X_test_2)
+            # X_test_2 = normalize(X_test_2)
+            right_label = [info_json['modulations']['labels'][mod.split("_")[0]] for _ in range(len(X_test_2))]
+            predict = np.argmax(model.predict(X_test_2), axis=-1)
             accuracy = accuracy_score(right_label, predict)
-            result[i][snr - (21 - number_of_snr)] = accuracy
+            result[i][j] = accuracy
 
     accuracy_graphic(result, fig_folder, input_id)
 
@@ -226,7 +223,7 @@ def evaluate_rna(input_id=' ', test_size=500):  # Make a prediction using some s
 def accuracy_graphic(result, fig_folder, model_id):
     # Then, it creates an accuracy graphic, containing the
     # prediction result to all snr values and all modulations
-    figure = plt.figure(figsize=(8, 4), dpi=150)
+    # figure = plt.figure(figsize=(8, 4), dpi=150)
     plt.title("Accuracy")
     plt.ylabel("Right prediction")
     plt.xlabel("SNR [dB]")
@@ -236,8 +233,9 @@ def accuracy_graphic(result, fig_folder, model_id):
     plt.legend(loc='best')
     plt.savefig(join(fig_folder, "accuracy-" + model_id + ".png"),
                 bbox_inches='tight', dpi=300)
-    figure.clf()
-    plt.close(figure)
+    plt.show()
+    # figure.clf()
+    # plt.close(figure)
 
 
 if __name__ == '__main__':
@@ -253,5 +251,6 @@ if __name__ == '__main__':
     # arguments = parser.parse_args()
     # wandb.init(project="amcpy-team", config=HyperParameter(arguments).get_dict())
     # config = wandb.config
-    train_rna(HyperParameter(None))
-    evaluate_rna(' ')
+    X_train, X_test, y_train, y_test, scaler = preprocess_data()
+    # train_rna(HyperParameter(None), X_train, X_test, y_train, y_test)
+    evaluate_rna('4443e152')
