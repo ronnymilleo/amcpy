@@ -31,15 +31,15 @@ class HyperParameter:
     def __init__(self, arguments):
         if arguments is None:
             self.default = True
-            self.dropout = 0.2
-            self.epochs = 1000
-            self.optimizer = 'SGD'
+            self.dropout = 0.3
+            self.epochs = 50
+            self.optimizer = 'adam'
             self.initializer = 'he_normal'
-            self.layer_size_hl1 = 40
-            self.layer_size_hl2 = 40
-            self.layer_size_hl3 = 40
-            self.activation = 'sigmoid'
-            self.batch_size = 100
+            self.layer_size_hl1 = 22
+            self.layer_size_hl2 = 18
+            self.layer_size_hl3 = 14
+            self.activation = 'tanh'
+            self.batch_size = 32
         else:
             self.default = False
             self.dropout = round(float(arguments.dropout), 2)
@@ -50,7 +50,7 @@ class HyperParameter:
             self.layer_size_hl1 = int(arguments.layer_size_hl1)
             self.layer_size_hl2 = int(arguments.layer_size_hl2)
             self.layer_size_hl3 = int(arguments.layer_size_hl3)
-            self.batch_size = 100
+            self.batch_size = 32
 
     def get_dict(self):
         return dict(dropout=round(float(self.dropout), 2),
@@ -83,8 +83,6 @@ def create_model(cfg: HyperParameter) -> Sequential:  # Return sequential model
 
 
 def train_rna(cfg: HyperParameter):
-    rna_folder = pathlib.Path(join(os.getcwd(), 'rna'))
-    fig_folder = pathlib.Path(join(os.getcwd(), "figures"))
     new_id = str(uuid.uuid1()).split('-')[0]  # Generates a unique id to each RNA created
 
     X_train_tensor = tf.convert_to_tensor(
@@ -107,7 +105,7 @@ def train_rna(cfg: HyperParameter):
         history = model.fit(X_train_tensor, y_train_tensor, batch_size=cfg.batch_size, epochs=cfg.epochs, verbose=2)
     else:
         # Execute code only if wandb is activated
-        history = model.fit(X_train_tensor, y_train_tensor, batch_size=1600, epochs=cfg.epochs, verbose=2,
+        history = model.fit(X_train_tensor, y_train_tensor, batch_size=cfg.batch_size, epochs=cfg.epochs, verbose=2,
                             callbacks=[WandbCallback(validation_data=(X_test_tensor, y_test_tensor))])
 
     model.save(str(join(rna_folder, 'rna-' + new_id + '.h5')))
@@ -175,14 +173,8 @@ def train_rna(cfg: HyperParameter):
     plt.close(figure)
 
 
-def evaluate_rna(input_id=' '):  # Make a prediction using some samples
-    rna_folder = pathlib.Path(join(os.getcwd(), 'rna'))
-    fig_folder = pathlib.Path(join(os.getcwd(), "figures"))
-    data_folder = pathlib.Path(join(os.getcwd(), "mat-data", "pickle"))
-
-    print("\nStarting RNA evaluation by SNR.")
-
-    if input_id == ' ':  # If you do not specify a RNA id, it'll use the newest available in rna_folder
+def get_model_from_id(model_id: str):
+    if model_id == ' ':  # If you do not specify a RNA id, it'll use the newest available in rna_folder
         aux = [f for f in os.listdir(rna_folder) if "rna" in f]
         rna_files = [join(str(rna_folder), item) for item in aux]
         input_id = max(rna_files, key=os.path.getctime)
@@ -192,10 +184,14 @@ def evaluate_rna(input_id=' '):  # Make a prediction using some samples
         rna = join(str(rna_folder), "rna-" + input_id + ".h5")
         model = load_model(rna)  # Loads the RNA model
     else:
-        rna = join(str(rna_folder), "rna-" + input_id + ".h5")
+        rna = join(str(rna_folder), "rna-" + model_id + ".h5")
         model = load_model(rna)
-        print("\nUsing RNA with id {}.".format(input_id))
+        print("\nUsing RNA with id {}.".format(model_id))
+    return model, model_id
 
+
+def evaluate_rna(evaluate_loaded_model):  # Make a prediction using some samples
+    print("\nStarting RNA evaluation by SNR.")
     # For each modulation, randomly loads the test_size samples
     # and predict the result to all SNR values
     result = np.zeros((len(modulation_list), number_of_snr))
@@ -204,23 +200,22 @@ def evaluate_rna(input_id=' '):  # Make a prediction using some samples
         with open(join(data_folder, mod), 'rb') as evaluating_data:
             data = pickle.load(evaluating_data)
         for j, snr in enumerate(snr_list):
-            X_test_2 = data[j, :]
+            X_dataset = data[j, :]  # Test over all available data
             # Fit into data used for training, results are means and variances used to standardise the data
-            X_test_2 = scaler.transform(X_test_2)
-            # X_test_2 = normalize(X_test_2)
-            right_label = [info_json['modulations']['labels'][mod.split("_")[0]] for _ in range(len(X_test_2))]
-            predict = np.argmax(model.predict(X_test_2), axis=-1)
+            X_dataset = scaler.transform(X_dataset)
+            right_label = [info_json['modulations']['labels'][mod.split("_")[0]] for _ in range(len(X_dataset))]
+            predict = np.argmax(evaluate_loaded_model.predict(X_dataset), axis=-1)
             accuracy = accuracy_score(right_label, predict)
             result[i][j] = accuracy
 
-    accuracy_graphic(result, fig_folder, input_id)
+    accuracy_graphic(result)
 
-    if not os.path.isfile(join(rna_folder, "weights-" + input_id + ".h5")):
+    if not os.path.isfile(join(rna_folder, "weights-" + loaded_model_id + ".h5")):
         print("Weights file not found. Saving it into RNA folder")
-        model.save_weights(str(join(rna_folder, 'weights-' + input_id + '.h5')))
+        evaluate_loaded_model.save_weights(str(join(rna_folder, 'weights-' + loaded_model_id + '.h5')))
 
 
-def accuracy_graphic(result, fig_folder, model_id):
+def accuracy_graphic(result):
     # Then, it creates an accuracy graphic, containing the
     # prediction result to all snr values and all modulations
     # figure = plt.figure(figsize=(8, 4), dpi=150)
@@ -231,14 +226,71 @@ def accuracy_graphic(result, fig_folder, model_id):
     for item in range(len(result)):
         plt.plot(result[item], label=modulation_list[item])
     plt.legend(loc='best')
-    plt.savefig(join(fig_folder, "accuracy-" + model_id + ".png"),
+    plt.savefig(join(fig_folder, "accuracy-" + loaded_model_id + ".png"),
                 bbox_inches='tight', dpi=300)
     plt.show()
     # figure.clf()
     # plt.close(figure)
 
 
+def quantize_rna(input_array, q_type: tf.dtypes):
+    min_range_w = np.min(input_array[0])
+    min_range_b = np.min(input_array[1])
+    # Debug
+    # print('Min value for weights: {}'.format(min_range_w))
+    # print('Min value for bias: {}'.format(min_range_b))
+    max_range_w = np.max(input_array[0])
+    max_range_b = np.max(input_array[1])
+    # Debug
+    # print('Max value for weights: {}'.format(max_range_w))
+    # print('Max value for bias: {}'.format(max_range_b))
+    quantized_weights = tf.quantization.quantize(
+        input_array[0], min_range_w, max_range_w, q_type, mode='SCALED',
+        round_mode='HALF_AWAY_FROM_ZERO', name=None, narrow_range=False, axis=None,
+        ensure_minimum_range=0.01
+    )
+    quantized_bias = tf.quantization.quantize(
+        input_array[1], min_range_b, max_range_b, q_type, mode='SCALED',
+        round_mode='HALF_AWAY_FROM_ZERO', name=None, narrow_range=False, axis=None,
+        ensure_minimum_range=0.01
+    )
+    return list([quantized_weights, quantized_bias])
+
+
+def dequantize_rna(original_array, input_array):
+    min_range_w = np.min(original_array[0])
+    min_range_b = np.min(original_array[1])
+    # Debug
+    # print('Min value for weights: {}'.format(min_range_w))
+    # print('Min value for bias: {}'.format(min_range_b))
+    max_range_w = np.max(original_array[0])
+    max_range_b = np.max(original_array[1])
+    # Debug
+    # print('Max value for weights: {}'.format(max_range_w))
+    # print('Max value for bias: {}'.format(max_range_b))
+    dequantized_weights = tf.quantization.dequantize(
+        input_array[0].output, min_range_w, max_range_w, mode='SCALED', name=None, axis=None,
+        narrow_range=False, dtype=tf.dtypes.float32
+    )
+    dequantized_bias = tf.quantization.dequantize(
+        input_array[1].output, min_range_b, max_range_b, mode='SCALED', name=None, axis=None,
+        narrow_range=False, dtype=tf.dtypes.float32
+    )
+    return list([dequantized_weights, dequantized_bias])
+
+
+def get_quantization_error(original_weights, dequantized_weights):
+    # TODO: quantization error graphics
+    err = original_weights - dequantized_weights
+    plt.plot(err)
+    plt.show()
+    return err
+
+
 if __name__ == '__main__':
+    rna_folder = pathlib.Path(join(os.getcwd(), 'rna'))
+    fig_folder = pathlib.Path(join(os.getcwd(), "figures"))
+    data_folder = pathlib.Path(join(os.getcwd(), "mat-data", "pickle"))
     # parser = argparse.ArgumentParser(description='RNA argument parser')
     # parser.add_argument('--dropout', action='store', dest='dropout')
     # parser.add_argument('--epochs', action='store', dest='epochs')
@@ -252,5 +304,14 @@ if __name__ == '__main__':
     # wandb.init(project="amcpy-team", config=HyperParameter(arguments).get_dict())
     # config = wandb.config
     X_train, X_test, y_train, y_test, scaler = preprocess_data()
-    # train_rna(HyperParameter(None), X_train, X_test, y_train, y_test)
-    evaluate_rna('4443e152')
+    # train_rna(HyperParameter(None))
+    loaded_model, loaded_model_id = get_model_from_id(' ')
+    layer_numbers = [0, 1, 3, 5, 6]
+    # evaluate_rna(loaded_model)
+    for n in layer_numbers:
+        quantized = quantize_rna(loaded_model.layers[n].get_weights(), q_type=tf.dtypes.qint16)
+        dequantized_w = dequantize_rna(loaded_model.layers[n].get_weights(), quantized)
+        error_w = get_quantization_error(loaded_model.layers[n].get_weights()[0], dequantized_w[0])
+        print('Max error INPUT LAYER {} W: {}'.format(n, np.max(error_w)))
+        error_b = get_quantization_error(loaded_model.layers[n].get_weights()[1], dequantized_w[1])
+        print('Max error INPUT LAYER {} B: {}'.format(n, np.max(error_b)))
