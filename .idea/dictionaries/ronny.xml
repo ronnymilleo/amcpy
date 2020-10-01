@@ -4,6 +4,8 @@
       <w>amcpy</w>
       <w>bpsk</w>
       <w>crossentropy</w>
+      <w>dequantize</w>
+      <w>dequantized</w>
       <w>hyperparameter</w>
       <w>hyperparameters</w>
       <w>qpsk</w>
