@@ -3,11 +3,11 @@ import os
 import pathlib
 import pickle
 from os.path import join
-from termcolor import colored
 
 import numpy as np
+from termcolor import colored
 
-with open("./info.json") as handle:
+with open("../info.json") as handle:
     info_json = json.load(handle)
 
 modulations = info_json['modulations']['names']
@@ -22,25 +22,25 @@ for modulation in modulations:
         try:  # Look for file on default folder
             if data_set == "rayleigh":
                 file_name = pathlib.Path(join(os.getcwd(),
-                                              'gr-data',
+                                              '../gr-data',
                                               'binary',
                                               'binary_' + modulation + "(" + "{}".format(value) + ")"))
                 data = np.fromfile(file_name, dtype=np.complex64)
             if data_set == "awgn":
                 file_name = pathlib.Path(join(os.getcwd(),
-                                              'gr-data',
+                                              '../gr-data',
                                               'binary',
                                               'binary_awgn_' + modulation + "(" + "{}".format(value) + ")"))
                 data = np.fromfile(file_name, dtype=np.complex64)
         except FileNotFoundError:  # If exception is raised, then look for personal storage on Google Drive
             if data_set == "rayleigh":
                 file_name = pathlib.Path(join('C:\\Users\\ronny\\Google Drive\\Colab Notebooks',
-                                              'gr-data',
+                                              '../gr-data',
                                               'binary',
                                               'binary_' + modulation + "(" + "{}".format(value) + ")"))
             if data_set == "awgn":
                 file_name = pathlib.Path(join('C:\\Users\\ronny\\Google Drive\\Colab Notebooks',
-                                              'gr-data',
+                                              '../gr-data',
                                               'binary',
                                               'binary_awgn_' + modulation + "(" + "{}".format(value) + ")"))
         try:
@@ -61,14 +61,14 @@ for modulation in modulations:
     # Save binary files in pickle (without delay)
     if data_set == "rayleigh":
         with open(pathlib.Path(join(os.getcwd(),
-                                    'gr-data',
+                                    '../gr-data',
                                     'pickle',
                                     modulation + '.pickle')), 'wb') as handle:
             pickle.dump(signal, handle, protocol=pickle.HIGHEST_PROTOCOL)
         print(modulation + ' file saved...')
     if data_set == "awgn":
         with open(pathlib.Path(join(os.getcwd(),
-                                    'gr-data',
+                                    '../gr-data',
                                     'pickle',
                                     modulation + '_awgn.pickle')), 'wb') as handle:
             pickle.dump(signal, handle, protocol=pickle.HIGHEST_PROTOCOL)
