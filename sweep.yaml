@@ -1,4 +1,4 @@
-program: rna_v1.py
+program: nn_v1.py
 method: bayes
 metric:
   name: val_accuracy
