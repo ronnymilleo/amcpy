@@ -1,262 +1,154 @@
-import math
-
 import numpy as np
+from scipy import stats
 
 
+class InstValues:
+    # For debug purposes only
+    def __init__(self, signal_input):
+        self.inst_abs = np.abs(signal_input)
+        self.inst_phase = np.angle(signal_input)
+        self.inst_unwrapped_phase = np.unwrap(np.angle(signal_input))
+        self.inst_freq = 1 / (2 * np.pi) * np.diff(np.unwrap(np.angle(signal_input)))
+        self.inst_cna = np.abs(signal_input) / np.mean(np.abs(signal_input)) - 1
+
+
+class MomentValues:
+    # E[x] = mean(x) when the probability p(x) is equal for every sample
+    # Mpq = E[x^(p-q).x*^q]
+    def __init__(self, signal_input):
+        self.m20 = np.mean(np.power(signal_input, 2 - 0) * np.power(np.conj(signal_input), 0))
+        self.m21 = np.mean(np.power(signal_input, 2 - 1) * np.power(np.conj(signal_input), 1))
+        self.m22 = np.mean(np.power(signal_input, 2 - 2) * np.power(np.conj(signal_input), 2))
+        self.m40 = np.mean(np.power(signal_input, 4 - 0) * np.power(np.conj(signal_input), 0))
+        self.m41 = np.mean(np.power(signal_input, 4 - 1) * np.power(np.conj(signal_input), 1))
+        self.m42 = np.mean(np.power(signal_input, 4 - 2) * np.power(np.conj(signal_input), 2))
+        self.m43 = np.mean(np.power(signal_input, 4 - 3) * np.power(np.conj(signal_input), 3))
+        self.m60 = np.mean(np.power(signal_input, 6 - 0) * np.power(np.conj(signal_input), 0))
+        self.m61 = np.mean(np.power(signal_input, 6 - 1) * np.power(np.conj(signal_input), 1))
+        self.m62 = np.mean(np.power(signal_input, 6 - 2) * np.power(np.conj(signal_input), 2))
+        self.m63 = np.mean(np.power(signal_input, 6 - 3) * np.power(np.conj(signal_input), 3))
+
+
+# Std of the Instantaneous Phase
+def std_dev_inst_phase(signal_input):
+    ft_output = np.std(np.angle(signal_input))
+    return ft_output
+
+
+# Std of the Absolute Instantaneous Phase
+def std_dev_abs_inst_phase(signal_input):
+    ft_output = np.std(np.abs(np.angle(signal_input)))
+    return ft_output
+
+
+# Std of the Instantaneous Frequency
+def std_dev_inst_freq(signal_input):
+    ft_output = np.std(1 / (2 * np.pi) * np.diff(np.unwrap(np.angle(signal_input))))
+    return ft_output
+
+
+# Std of the Absolute Instantaneous Frequency
+def std_dev_abs_inst_freq(signal_input):
+    ft_output = np.std(np.abs(1 / (2 * np.pi) * np.diff(np.unwrap(np.angle(signal_input)))))
+    return ft_output
+
+
+# Std of the Absolute CN Instantaneous Amplitude
+def std_dev_inst_cna(signal_input):
+    ft_output = np.std(np.abs(signal_input) / np.mean(np.abs(signal_input)) - 1)
+    return ft_output
+
+
+# Std of the CN Instantaneous Amplitude
+def std_dev_abs_inst_cna(signal_input):
+    ft_output = np.std(np.abs(np.abs(signal_input) / np.mean(np.abs(signal_input)) - 1))
+    return ft_output
+
+
+# Mean Value of the Signal Magnitude
+def mean_of_signal_magnitude(signal_input):
+    ft_output = np.mean(np.abs(signal_input))
+    return ft_output
+
+
+# Squared Mean of the CN Amplitude
+def squared_mean_of_cna(signal_input):
+    ft_output = np.power(np.mean(np.abs(signal_input) / np.mean(np.abs(signal_input)) - 1), 2)
+    return ft_output
+
+
+# Normalized Sqrt Value of Sum of Amplitude
+def normalized_sqrt_of_sum_of_amp(signal_input):
+    ft_output = np.sqrt(np.sum(np.abs(signal_input))) / len(signal_input)
+    return ft_output
+
+
+# Ratio of I/Q Components
+def ratio_iq(signal_input):
+    ft_output = np.sum(np.power(np.imag(signal_input), 2)) / np.sum(np.power(np.real(signal_input), 2))
+    return ft_output
+
+
+# Gmax
 def gmax(signal_input):
-    abs_fft = abs(np.fft.fft(signal_input))
-    abs_fft_squared = abs_fft ** 2
-    psd = abs_fft_squared / len(signal_input)
-    output = max(psd)
-    return output
+    ft_output = np.max(np.power(np.abs(np.fft.fft(signal_input)), 2) / len(signal_input))
+    return ft_output
 
 
-def mean(signal_input):
-    output = sum(signal_input) / len(signal_input)
-    return output
+# Kurtosis of the Absolute Amplitude
+def kurtosis_of_abs_amplitude(signal_input):
+    ft_output = stats.kurtosis(np.abs(signal_input))
+    return ft_output
 
 
-def mean_of_squared(signal_input):
-    aux1 = signal_input ** 2
-    aux2 = sum(aux1)
-    output = aux2 / len(signal_input)
-    return output
+# Kurtosis of the Absolute Frequency
+def kurtosis_of_abs_freq(signal_input):
+    ft_output = stats.kurtosis(np.abs(1 / (2 * np.pi) * np.diff(np.unwrap(np.angle(signal_input)))))
+    return ft_output
 
 
-def std_deviation(signal_input):
-    aux1 = (signal_input - mean(signal_input))
-    aux2 = aux1 ** 2
-    aux3 = sum(aux2)
-    aux4 = 1 / (len(signal_input) - 1)
-    output = math.sqrt(aux3 * aux4)
-    return output
+def cumulant_20(signal_input):
+    m = MomentValues(signal_input)
+    return m.m20
 
 
-def kurtosis(signal_input):
-    m = mean(signal_input)
-    aux4 = (signal_input - m) ** 4
-    aux2 = (signal_input - m) ** 2
-    num = (1 / len(signal_input)) * sum(aux4)
-    den = ((1 / len(signal_input)) * sum(aux2)) ** 2
-    output = num / den
-    return output
+def cumulant_21(signal_input):
+    m = MomentValues(signal_input)
+    return m.m21
 
 
-def instantaneous_phase(signal_input):
-    output = np.angle(signal_input)
-    return output
+def cumulant_40(signal_input):
+    m = MomentValues(signal_input)
+    return m.m40 - 3 * np.power(m.m20, 2)
 
 
-def instantaneous_unwrapped_phase(signal_input):
-    output = np.unwrap(np.angle(signal_input))
-    return output
+def cumulant_41(signal_input):
+    m = MomentValues(signal_input)
+    return m.m40 - 3 * m.m20 * m.m21
 
 
-def instantaneous_frequency(signal_input):
-    output = 1 / (2 * np.pi) * np.diff(np.unwrap(np.angle(signal_input)))
-    return output
+def cumulant_42(signal_input):
+    m = MomentValues(signal_input)
+    return m.m42 - np.power(np.abs(m.m20), 2) - 2 * np.power(m.m21, 2)
 
 
-def instantaneous_absolute(signal_input):
-    output = abs(signal_input)
-    return output
+def cumulant_60(signal_input):
+    m = MomentValues(signal_input)
+    return m.m60 - 15 * m.m20 * m.m40 + 30 * np.power(m.m20, 3)
 
 
-def instantaneous_cn_absolute(signal_input):
-    output = abs(signal_input) / mean(abs(signal_input)) - 1
-    return output
+def cumulant_61(signal_input):
+    m = MomentValues(signal_input)
+    return m.m61 - 5 * m.m21 * m.m40 - 10 * m.m20 * m.m41 + 30 * np.power(m.m20, 2) * m.m21
 
 
-def moment(input, p, q):
-    aux = input ** (p - q)
-    aux2 = np.conj(input)
-    aux3 = aux2 ** q
-    aux4 = sum(aux * aux3)
-    aux5 = 1/len(input)
-    output = aux5 * aux4
-    return output
+def cumulant_62(signal_input):
+    m = MomentValues(signal_input)
+    return m.m62 - 6 * m.m20 * m.m42 - 8 * m.m21 * m.m41 - m.m22 * m.m40 + \
+           6 * np.power(m.m20, 2) * m.m22 + 24 * np.power(m.m21, 2) * m.m20
 
 
-def cum20(input):
-    aux = input ** 2
-    aux1 = sum(aux)
-    aux2 = 1/len(input)
-    output = aux2 * aux1
-    return abs(output)
-
-
-def cum21(input):
-    aux = abs(input) ** 2
-    aux1 = sum(aux)
-    aux2 = 1/len(input)
-    output = aux2 * aux1
-    return output
-
-
-def cum40(input):
-    '''
-    aux = input ** 4
-    aux2 = cum20(input)
-    aux3 = aux2 ** 2
-    aux4 = 3 * aux3
-    aux5 = aux - aux4
-    aux6 = sum(aux5)
-    aux7 = 1/len(input)
-    output = aux7 * aux6
-    '''
-    output = moment(input, 4, 0) - (3 * (moment(input, 2, 0) ** 2))
-    return abs(output)
-
-
-def cum41(input):
-    '''
-    c20 = cum20(input)
-    c21 = cum21(input)
-    aux = 3 * c20 * c21
-    aux1 = input ** 3
-    aux2 = np.conj(input)
-    aux3 = aux1 * aux2
-    aux4 = aux3 - aux
-    aux5 = sum(aux4)
-    aux6 = 1/len(input)
-    output = aux5 * aux6
-    '''
-    output = moment(input, 4, 1) - \
-        (3 * moment(input, 2, 1) * moment(input, 2, 0))
-    return abs(output)
-
-
-def cum42(input):
-    '''
-    c20 = abs(cum20(input)) ** 2
-    aux = cum21(input) ** 2
-    c21 = 2 * aux
-    aux1 = abs(input) ** 4
-    aux2 = aux1 - c20 - c21
-    aux3 = sum(aux2)
-    aux4 = 1/len(input)
-    output = aux3 * aux4
-    '''
-    output = moment(input, 4, 2) - (abs(moment(input, 2, 0))
-                                    ** 2) - (2 * (moment(input, 2, 1) ** 2))
-    return abs(output)
-
-
-def cum60(input):
-    ''' 
-    input_6th = input ** 6
-    input_4th = input ** 4
-    cum_rd = cum20(input) ** 3
-
-    term2 = 15 * cum20(input) * input_4th
-    term3 = 3 * cum_rd
-
-    aux = sum(input_6th - term2 + term3)
-    aux2 = 1/len(input)
-    output = aux2 * aux
-    '''
-    output = moment(input, 6, 0) - (15 * moment(input, 2, 0) *
-                                    moment(input, 4, 0)) + (3 * (moment(input, 2, 0) ** 3))
-    return abs(output)
-
-
-def cum61(input):
-    '''
-    input_conj = np.conj(input)
-    input_rd = input ** 3
-    input_4th = input ** 4
-    input_5th = input ** 5
-    cum_nd = cum20(input) ** 2
-
-    term1 = input_5th * input_conj
-    term2 = 5 * cum21(input) * input_4th
-    term3 = 10 * cum20(input) * input_rd * input_conj
-    term4 = 30 * cum_nd * cum21(input)
-
-    aux = sum(term1 - term2 - term3 + term4)
-    aux2 = 1/len(input)
-    output = aux2 * aux
-    '''
-    output = moment(input, 6, 1) - (5 * moment(input, 2, 1) * moment(input, 4, 0)) - (10 * moment(
-                    input, 2, 0) * moment(input, 4, 1)) + (30 * (moment(input, 2, 0) ** 2) * moment(input, 2, 0))
-    return abs(output)
-
-
-def cum62(input):
-    '''
-    input_nd = input ** 2
-    input_rd = input ** 3
-    input_4th = input ** 4
-    input_conj = np.conj(input)
-    input_conj_nd = np.conj(input) ** 2
-    cum20_nd = cum20(input) ** 2
-    cum21_nd = cum21(input) ** 2
-
-    term1 = input_4th * input_conj_nd
-    term2 = 6 * cum20(input) * input_nd * input_conj_nd
-    term3 = 8 * cum21(input) * input_rd * input_conj
-    term4 = input_conj_nd * input_4th
-    term5 = 6 * cum20_nd * input_conj_nd
-    term6 = 24 * cum21_nd * cum20(input)
-
-    aux = sum(term1 - term2 - term3 - term4 + term5 + term6)
-    aux2 = 1/len(input)
-    output = aux2 * aux
-    '''
-    output = moment(input, 6, 2) - (6 * moment(input, 2, 0) * moment(input, 4, 2)) - \
-                    (8 * moment(input, 2, 1) * moment(input, 4, 1)) - (moment(input, 2, 2) * \
-                    moment(input, 4, 0)) + (6 * (moment(input, 2, 0) ** 2) * moment(input, 2, 2)) + \
-                    (24 * (moment(input, 2, 1) ** 2) * moment(input, 2, 0))
-    return abs(output)
-
-
-def cum63(input):
-    '''
-    input_nd = input ** 2
-    input_rd = input ** 3
-    input_conj = np.conj(input)
-    input_conj_nd = np.conj(input) ** 2
-    input_conj_rd = np.conj(input) ** 3
-    cum21_rd = cum21(input) ** 3
-
-    term1 = input_rd * input_conj_rd
-    term2 = 9 * cum21(input) * input_nd * input_conj_nd
-    term3 = 12 * cum21_rd
-    term4 = 3 * cum20(input) * input * input_conj_rd
-    term5 = 3 * input_conj_nd * input_rd * input_conj
-    term6 = 18 * cum20(input) * cum21(input) * input_conj_nd
-
-    aux = sum(term1 - term2 + term3 - term4 - term5 + term6)
-    aux2 = 1/len(input)
-    output = aux2 * aux
-    '''
-    output = moment(input, 6, 3) - (9 * moment(input, 2, 1) * moment(input, 4, 2)) + \
-                    (12 * (moment(input, 2, 1) ** 3)) - (3 * moment(input, 2, 0) * moment(input, 4, 3)) - \
-                    (3 * moment(input, 2, 2) * moment(input, 4, 1)) + (18 * moment(input, 2, 0) * \
-                    moment(input, 2, 1) * moment(input, 2, 2))
-    return abs(output)
-
-
-def meanAbsolute(input):
-    aux = instantaneous_absolute(input)
-    aux2 = sum(aux)
-    aux3 = 1/len(input)
-    output = aux3 * aux2
-    return output
-
-
-def sqrtAmplitude(input):
-    aux = instantaneous_absolute(input)
-    aux2 = sum(aux)
-    aux3 = math.sqrt(aux2)
-    output = aux3 / len(input)
-    return output
-
-
-def ratioIQ(input):
-    aux = (input.real) ** 2
-    aux1 = sum(aux)
-    aux2 = (input.imag) ** 2
-    aux3 = sum(aux2)
-    output = aux3/aux1
-    return output
+def cumulant_63(signal_input):
+    m = MomentValues(signal_input)
+    return m.m63 - 9 * m.m21 * m.m42 + 12 * np.power(m.m21, 3) - 3 * m.m20 * m.m43 - \
+           3 * m.m22 * m.m41 + 18 * m.m20 * m.m21 * m.m22
