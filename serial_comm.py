@@ -4,10 +4,48 @@ import pathlib
 import struct
 from os.path import join
 
-import matplotlib.pyplot as plt
 import numpy as np
 import scipy.io
 import serial
+
+
+def receive_data(port: serial.Serial()) -> (float, int):
+    print('Receiving data...')
+    data = []
+    start = 0
+    while True:
+        a = port.read(size=4)
+        if a == b'\xCA\xCA\xCA\xCA':
+            # print('Head')
+            start = 1
+        elif a == b'\xF0\xF0\xF0\xF0':
+            # print('Tail')
+            break
+        elif start == 1:
+            data.append(a)
+
+    print('Data length: {}'.format(len(data)))
+    num_array = np.zeros((len(data) - 1,), dtype=np.float32)
+    counter = np.zeros((1,), dtype=np.int32)
+    if len(data) == 2:  # Feature
+        new_data = b''.join(data)
+        num_array = struct.unpack('<f', new_data[0:4])
+        counter = struct.unpack('<i', new_data[4:8])
+    elif len(data) == 1025:  # Data
+        new_data = b''.join(data)
+        for x in range(0, 1024):
+            aux = struct.unpack('<f', new_data[x * 4:x * 4 + 4])
+            num_array[x] = aux[0]
+        counter = struct.unpack('<i', new_data[4096:4100])
+    elif len(data) == 2048:  # Echo
+        new_data = b''.join(data)
+        real = np.ndarray((len(data) // 2,), dtype=np.float32)
+        imag = np.ndarray((len(data) // 2,), dtype=np.float32)
+        for x in range(8, 8200, 8):
+            real[x] = struct.unpack('<f', new_data[x - 8:x - 4])
+            imag[x] = struct.unpack('<f', new_data[x - 4:x])
+    return num_array, counter
+
 
 isTest = 0
 
@@ -64,109 +102,41 @@ if isTest == 0:
         binary = struct.pack('<f', np.imag(parsed_BPSK_signal[0, 0, point]))
         ser.write(binary)
 
-    for results in range(0, 5):
-        # Create string to receive echo data
-        string = ""
+    received_list = []
+    for results in range(0, 11):
+        received_list.append(receive_data(ser))
 
-        print('Receiving timings...')
-        # Wait for data to be returned
-        while True:
-            char = ser.read().decode('utf-8', 'ignore')
-            string = string + char
-            if char == '&':  # End of transmission char (by Ronny)
-                break
-        print(string)
+    err_abs_vector = inst_abs.T - received_list[0][0]
+    print('Instantaneous absolute max error: {:.3}'.format(np.max(err_abs_vector)))
+    print('Calculation time in clock cycles: {}'.format(received_list[0][1][0]))
+    print('Calculation time in ms: {:.3}'.format(received_list[0][1][0] / 240000))
+    # plt.plot(err_abs_vector)
+    # plt.show()
 
-        print('Receiving data...')
-        data = []
-        start = 0
-        while True:
-            a = ser.read(size=4)
-            if a == b'\xCA\xCA\xCA\xCA':
-                print('Head')
-                start = 1
-            elif a == b'\xF0\xF0\xF0\xF0':
-                print('Tail')
-                break
-            elif start == 1:
-                data.append(a)
+    err_phase_vector = inst_phase.T - received_list[1][0]
+    print('Instantaneous phase max error: {:.3}'.format(np.max(err_phase_vector)))
+    print('Calculation time in clock cycles: {}'.format(received_list[1][1][0]))
+    print('Calculation time in ms: {:.3}'.format(received_list[1][1][0] / 240000))
+    # plt.plot(err_phase_vector)
+    # plt.show()
 
-        received = []
-        if len(data) == 2048:  # Echo
-            new_data = b''.join(data)
-            real = []
-            imag = []
+    err_unwrapped_phase_vector = inst_unwrapped_phase.T - received_list[2][0]
+    print('Instantaneous unwrapped phase max error: {:.3}'.format(np.max(err_unwrapped_phase_vector)))
+    print('Calculation time in clock cycles: {}'.format(received_list[2][1][0]))
+    print('Calculation time in ms: {:.3}'.format(received_list[2][1][0] / 240000))
+    # plt.plot(err_unwrapped_phase_vector)
+    # plt.show()
 
-            for x in range(8, 8200, 8):
-                real.append(struct.unpack('<f', new_data[x - 8:x - 4]))
-                imag.append(struct.unpack('<f', new_data[x - 4:x]))
+    err_freq_vector = inst_freq[0:1023].T - received_list[3][0][0:1023]
+    print('Instantaneous frequency max error: {:.3}'.format(np.max(err_freq_vector)))
+    print('Calculation time in clock cycles: {}'.format(received_list[3][1][0]))
+    print('Calculation time in ms: {:.3}'.format(received_list[3][1][0] / 240000))
+    # plt.plot(err_freq_vector)
+    # plt.show()
 
-            real_n = np.array(real, dtype=np.float32)
-            imag_n = np.array(imag, dtype=np.float32)
-            err_real = np.ones(1024)
-            err_imag = np.ones(1024)
-
-            # Errors
-            for i in range(0, 1024):
-                err_real[i] = np.real(parsed_BPSK_signal[0, 0, i]) - real_n[i]
-                err_imag[i] = np.imag(parsed_BPSK_signal[0, 0, i]) - imag_n[i]
-        else:  # Data
-            new_data = b''.join(data)
-            for x in range(0, 4096, 4):
-                received.append(struct.unpack('<f', new_data[x:x + 4]))
-
-            if results == 0:
-                rx_inst_abs = np.array(received, dtype=np.float32)
-                plt.figure(num=0, figsize=(6.4, 3.6), dpi=300)
-                plt.plot(inst_abs)
-                plt.plot(rx_inst_abs, '--')
-                plt.show()
-            elif results == 1:
-                rx_inst_phase = np.array(received, dtype=np.float32)
-                plt.figure(num=1, figsize=(6.4, 3.6), dpi=300)
-                plt.plot(inst_phase)
-                plt.plot(rx_inst_phase, '--')
-                plt.show()
-            elif results == 2:
-                rx_inst_unwrapped_phase = np.array(received, dtype=np.float32)
-                plt.figure(num=2, figsize=(6.4, 3.6), dpi=300)
-                plt.plot(inst_unwrapped_phase)
-                plt.plot(rx_inst_unwrapped_phase, '--')
-                plt.show()
-            elif results == 3:
-                rx_inst_freq = np.array(received, dtype=np.float32)
-                plt.figure(num=3, figsize=(6.4, 3.6), dpi=300)
-                plt.plot(inst_freq)
-                plt.plot(rx_inst_freq, '--')
-                plt.show()
-            elif results == 4:
-                rx_inst_cn_abs = np.array(received, dtype=np.float32)
-                plt.figure(num=4, figsize=(6.4, 3.6), dpi=300)
-                plt.plot(inst_cn_abs)
-                plt.plot(rx_inst_cn_abs, '--')
-                plt.show()
-
-    err_abs_vector = inst_abs - rx_inst_abs
-    print('Instantaneous absolute max error: ' + np.max(err_abs_vector))
-    plt.plot(err_abs_vector)
-    plt.show()
-
-    err_phase_vector = inst_phase - rx_inst_phase
-    print('Instantaneous phase max error: ' + np.max(err_phase_vector))
-    plt.plot(err_phase_vector)
-    plt.show()
-
-    err_unwrapped_phase_vector = inst_unwrapped_phase - rx_inst_unwrapped_phase
-    print('Instantaneous unwrapped phase max error: ' + np.max(err_unwrapped_phase_vector))
-    plt.plot(err_unwrapped_phase_vector)
-    plt.show()
-
-    err_freq_vector = inst_freq[0:1023] - rx_inst_freq[0:1023]
-    print('Instantaneous frequency max error: ' + np.max(err_freq_vector))
-    plt.plot(err_freq_vector)
-    plt.show()
-
-    err_cn_abs_vector = inst_cn_abs - rx_inst_cn_abs
-    print('Instantaneous CN absolute max error: ' + np.max(err_cn_abs_vector))
-    plt.plot(err_cn_abs_vector)
-    plt.show()
+    err_cn_abs_vector = inst_cn_abs.T - received_list[4][0]
+    print('Instantaneous CN amplitude max error: {:.3}'.format(np.max(err_cn_abs_vector)))
+    print('Calculation time in clock cycles: {}'.format(received_list[4][1][0]))
+    print('Calculation time in ms: {:.3}'.format(received_list[4][1][0] / 240000))
+    # plt.plot(err_cn_abs_vector)
+    # plt.show()
