@@ -8,6 +8,9 @@ import numpy as np
 import scipy.io
 import serial
 
+import features
+import functions
+
 
 def receive_data(port: serial.Serial()) -> (float, int):
     print('Receiving data...')
@@ -31,17 +34,17 @@ def receive_data(port: serial.Serial()) -> (float, int):
         new_data = b''.join(data)
         num_array = struct.unpack('<f', new_data[0:4])
         counter = struct.unpack('<i', new_data[4:8])
-    elif len(data) == 1025:  # Data
+    elif len(data) == frameSize + 1:  # Data
         new_data = b''.join(data)
-        for x in range(0, 1024):
+        for x in range(0, frameSize):
             aux = struct.unpack('<f', new_data[x * 4:x * 4 + 4])
             num_array[x] = aux[0]
-        counter = struct.unpack('<i', new_data[4096:4100])
-    elif len(data) == 2048:  # Echo
+        counter = struct.unpack('<i', new_data[frameSize * 4:frameSize * 4 + 4])
+    elif len(data) == frameSize * 2:  # Echo
         new_data = b''.join(data)
         real = np.ndarray((len(data) // 2,), dtype=np.float32)
         imag = np.ndarray((len(data) // 2,), dtype=np.float32)
-        for x in range(8, 8200, 8):
+        for x in range(8, frameSize * 4 + 8, 8):
             real[x] = struct.unpack('<f', new_data[x - 8:x - 4])
             imag[x] = struct.unpack('<f', new_data[x - 4:x])
     return num_array, counter
@@ -53,6 +56,7 @@ with open("./info.json") as handle:
     info_json = json.load(handle)
 
 modulations = info_json['modulations']['names']
+frameSize = info_json['frameSize']
 
 # Filename setup
 mat_file_name = pathlib.Path(join(os.getcwd(), 'mat-data', 'testData.mat'))
@@ -75,20 +79,8 @@ parsed_QAM16_signal = data_mat[info[modulations[3]]]
 parsed_QAM64_signal = data_mat[info[modulations[4]]]
 parsed_noise_signal = data_mat[info[modulations[5]]]
 
-inst_abs = np.transpose(np.array(abs(parsed_BPSK_signal[0, 0, 0:1024]), dtype=np.float32, ndmin=2))
-inst_phase = np.transpose(np.array(np.angle(parsed_BPSK_signal[0, 0, 0:1024]), dtype=np.float32, ndmin=2))
-inst_unwrapped_phase = np.transpose(
-    np.array(np.unwrap(np.angle(parsed_BPSK_signal[0, 0, 0:1024])), dtype=np.float32, ndmin=2))
-inst_freq = np.transpose(
-    np.array(1 / (2 * np.pi) * np.diff(np.unwrap(np.angle(parsed_BPSK_signal[0, 0, 0:1024]))), dtype=np.float32,
-             ndmin=2))
-inst_cn_abs = (inst_abs / np.mean(inst_abs)) - 1
-
-rx_inst_abs = np.zeros((1024, 1))
-rx_inst_freq = np.zeros((1024, 1))
-rx_inst_phase = np.zeros((1024, 1))
-rx_inst_unwrapped_phase = np.zeros((1024, 1))
-rx_inst_cn_abs = np.zeros((1024, 1))
+i_values = functions.InstValues(parsed_BPSK_signal[0, 0, 0:frameSize])
+ft = np.float32(features.calculate_features(parsed_BPSK_signal[0, 0, 0:frameSize]))
 
 if isTest == 0:
     # Setup UART COM on Windows
@@ -96,47 +88,112 @@ if isTest == 0:
 
     # Write to UART
     print('Transmitting...')
-    for point in range(0, 1024):
+    for point in range(0, 2048):
         binary = struct.pack('<f', np.real(parsed_BPSK_signal[0, 0, point]))
         ser.write(binary)
         binary = struct.pack('<f', np.imag(parsed_BPSK_signal[0, 0, point]))
         ser.write(binary)
 
     received_list = []
-    for results in range(0, 11):
+    for results in range(0, 18):
         received_list.append(receive_data(ser))
 
-    err_abs_vector = inst_abs.T - received_list[0][0]
-    print('Instantaneous absolute max error: {:.3}'.format(np.max(err_abs_vector)))
+    err_abs_vector = i_values.inst_abs.T - received_list[0][0]
+    print('Instantaneous absolute max error: {:.3}'.format(np.max(np.abs(err_abs_vector))))
     print('Calculation time in clock cycles: {}'.format(received_list[0][1][0]))
     print('Calculation time in ms: {:.3}'.format(received_list[0][1][0] / 240000))
     # plt.plot(err_abs_vector)
     # plt.show()
 
-    err_phase_vector = inst_phase.T - received_list[1][0]
-    print('Instantaneous phase max error: {:.3}'.format(np.max(err_phase_vector)))
+    err_phase_vector = i_values.inst_phase.T - received_list[1][0]
+    print('Instantaneous phase max error: {:.3}'.format(np.max(np.abs(err_phase_vector))))
     print('Calculation time in clock cycles: {}'.format(received_list[1][1][0]))
     print('Calculation time in ms: {:.3}'.format(received_list[1][1][0] / 240000))
     # plt.plot(err_phase_vector)
     # plt.show()
 
-    err_unwrapped_phase_vector = inst_unwrapped_phase.T - received_list[2][0]
-    print('Instantaneous unwrapped phase max error: {:.3}'.format(np.max(err_unwrapped_phase_vector)))
+    err_unwrapped_phase_vector = i_values.inst_unwrapped_phase.T - received_list[2][0]
+    print('Instantaneous unwrapped phase max error: {:.3}'.format(np.max(np.abs(err_unwrapped_phase_vector))))
     print('Calculation time in clock cycles: {}'.format(received_list[2][1][0]))
     print('Calculation time in ms: {:.3}'.format(received_list[2][1][0] / 240000))
     # plt.plot(err_unwrapped_phase_vector)
     # plt.show()
 
-    err_freq_vector = inst_freq[0:1023].T - received_list[3][0][0:1023]
-    print('Instantaneous frequency max error: {:.3}'.format(np.max(err_freq_vector)))
+    err_freq_vector = i_values.inst_freq[0:frameSize - 1].T - received_list[3][0][0:frameSize - 1]
+    print('Instantaneous frequency max error: {:.3}'.format(np.max(np.abs(err_freq_vector))))
     print('Calculation time in clock cycles: {}'.format(received_list[3][1][0]))
     print('Calculation time in ms: {:.3}'.format(received_list[3][1][0] / 240000))
     # plt.plot(err_freq_vector)
     # plt.show()
 
-    err_cn_abs_vector = inst_cn_abs.T - received_list[4][0]
-    print('Instantaneous CN amplitude max error: {:.3}'.format(np.max(err_cn_abs_vector)))
+    err_cn_abs_vector = i_values.inst_cna.T - received_list[4][0]
+    print('Instantaneous CN amplitude max error: {:.3}'.format(np.max(np.abs(err_cn_abs_vector))))
     print('Calculation time in clock cycles: {}'.format(received_list[4][1][0]))
     print('Calculation time in ms: {:.3}'.format(received_list[4][1][0] / 240000))
     # plt.plot(err_cn_abs_vector)
     # plt.show()
+
+    err_ft0 = ft[0] - received_list[5][0]
+    print('Feature 0 error: {:.3}'.format(np.max(np.abs(err_ft0))))
+    print('Calculation time in clock cycles: {}'.format(received_list[5][1][0]))
+    print('Calculation time in ms: {:.3}'.format(received_list[5][1][0] / 240000))
+
+    err_ft1 = ft[1] - received_list[6][0]
+    print('Feature 1 error: {:.3}'.format(np.max(np.abs(err_ft1))))
+    print('Calculation time in clock cycles: {}'.format(received_list[6][1][0]))
+    print('Calculation time in ms: {:.3}'.format(received_list[6][1][0] / 240000))
+
+    err_ft2 = ft[2] - received_list[7][0]
+    print('Feature 2 error: {:.3}'.format(np.max(np.abs(err_ft2))))
+    print('Calculation time in clock cycles: {}'.format(received_list[7][1][0]))
+    print('Calculation time in ms: {:.3}'.format(received_list[7][1][0] / 240000))
+
+    err_ft3 = ft[3] - received_list[8][0]
+    print('Feature 3 error: {:.3}'.format(np.max(np.abs(err_ft3))))
+    print('Calculation time in clock cycles: {}'.format(received_list[8][1][0]))
+    print('Calculation time in ms: {:.3}'.format(received_list[8][1][0] / 240000))
+
+    err_ft4 = ft[4] - received_list[9][0]
+    print('Feature 4 error: {:.3}'.format(np.max(np.abs(err_ft4))))
+    print('Calculation time in clock cycles: {}'.format(received_list[9][1][0]))
+    print('Calculation time in ms: {:.3}'.format(received_list[9][1][0] / 240000))
+
+    err_ft5 = ft[5] - received_list[10][0]
+    print('Feature 5 error: {:.3}'.format(np.max(np.abs(err_ft5))))
+    print('Calculation time in clock cycles: {}'.format(received_list[10][1][0]))
+    print('Calculation time in ms: {:.3}'.format(received_list[10][1][0] / 240000))
+
+    err_ft6 = ft[6] - received_list[11][0]
+    print('Feature 6 error: {:.3}'.format(np.max(np.abs(err_ft6))))
+    print('Calculation time in clock cycles: {}'.format(received_list[11][1][0]))
+    print('Calculation time in ms: {:.3}'.format(received_list[11][1][0] / 240000))
+
+    err_ft7 = ft[7] - received_list[12][0]
+    print('Feature 7 error: {:.3}'.format(np.max(np.abs(err_ft7))))
+    print('Calculation time in clock cycles: {}'.format(received_list[12][1][0]))
+    print('Calculation time in ms: {:.3}'.format(received_list[12][1][0] / 240000))
+
+    err_ft8 = ft[8] - received_list[13][0]
+    print('Feature 8 error: {:.3}'.format(np.max(np.abs(err_ft8))))
+    print('Calculation time in clock cycles: {}'.format(received_list[13][1][0]))
+    print('Calculation time in ms: {:.3}'.format(received_list[13][1][0] / 240000))
+
+    err_ft9 = ft[9] - received_list[14][0]
+    print('Feature 9 error: {:.3}'.format(np.max(np.abs(err_ft9))))
+    print('Calculation time in clock cycles: {}'.format(received_list[14][1][0]))
+    print('Calculation time in ms: {:.3}'.format(received_list[14][1][0] / 240000))
+
+    err_ft10 = ft[10] - received_list[15][0]
+    print('Feature 10 error: {:.3}'.format(np.max(np.abs(err_ft10))))
+    print('Calculation time in clock cycles: {}'.format(received_list[15][1][0]))
+    print('Calculation time in ms: {:.3}'.format(received_list[15][1][0] / 240000))
+
+    err_ft11 = ft[11] - received_list[16][0]
+    print('Feature 11 error: {:.3}'.format(np.max(np.abs(err_ft11))))
+    print('Calculation time in clock cycles: {}'.format(received_list[16][1][0]))
+    print('Calculation time in ms: {:.3}'.format(received_list[16][1][0] / 240000))
+
+    err_ft12 = ft[12] - received_list[17][0]
+    print('Feature 12 error: {:.3}'.format(np.max(np.abs(err_ft12))))
+    print('Calculation time in clock cycles: {}'.format(received_list[17][1][0]))
+    print('Calculation time in ms: {:.3}'.format(received_list[17][1][0] / 240000))

@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def calculate_features(input_signal):
+def calculate_features(signal_input):
     with open("./info.json") as handle:
         info_json = json.load(handle)
 
