@@ -80,6 +80,7 @@ parsed_QAM64_signal = data_mat[info[modulations[4]]]
 parsed_noise_signal = data_mat[info[modulations[5]]]
 
 i_values = functions.InstValues(parsed_BPSK_signal[0, 0, 0:frameSize])
+m_values = functions.MomentValues(parsed_BPSK_signal[0, 0, 0:frameSize])
 ft = np.float32(features.calculate_features(parsed_BPSK_signal[0, 0, 0:frameSize]))
 
 if isTest == 0:
@@ -95,7 +96,7 @@ if isTest == 0:
         ser.write(binary)
 
     received_list = []
-    for results in range(0, 18):
+    for results in range(0, 27):
         received_list.append(receive_data(ser))
 
     err_abs_vector = i_values.inst_abs.T - received_list[0][0]
@@ -197,3 +198,48 @@ if isTest == 0:
     print('Feature 12 error: {:.3}'.format(np.max(np.abs(err_ft12))))
     print('Calculation time in clock cycles: {}'.format(received_list[17][1][0]))
     print('Calculation time in ms: {:.3}'.format(received_list[17][1][0] / 240000))
+
+    err_ft13 = ft[13] - received_list[18][0]
+    print('Feature 13 error: {:.3}'.format(np.max(np.abs(err_ft13))))
+    print('Calculation time in clock cycles: {}'.format(received_list[18][1][0]))
+    print('Calculation time in ms: {:.3}'.format(received_list[18][1][0] / 240000))
+
+    err_ft14 = ft[14] - received_list[19][0]
+    print('Feature 14 error: {:.3}'.format(np.max(np.abs(err_ft14))))
+    print('Calculation time in clock cycles: {}'.format(received_list[19][1][0]))
+    print('Calculation time in ms: {:.3}'.format(received_list[19][1][0] / 240000))
+
+    err_ft15 = ft[15] - received_list[20][0]
+    print('Feature 15 error: {:.3}'.format(np.max(np.abs(err_ft15))))
+    print('Calculation time in clock cycles: {}'.format(received_list[20][1][0]))
+    print('Calculation time in ms: {:.3}'.format(received_list[20][1][0] / 240000))
+
+    err_ft16 = ft[16] - received_list[21][0]
+    print('Feature 15 error: {:.3}'.format(np.max(np.abs(err_ft16))))
+    print('Calculation time in clock cycles: {}'.format(received_list[21][1][0]))
+    print('Calculation time in ms: {:.3}'.format(received_list[21][1][0] / 240000))
+
+    err_ft17 = ft[17] - received_list[22][0]
+    print('Feature 15 error: {:.3}'.format(np.max(np.abs(err_ft17))))
+    print('Calculation time in clock cycles: {}'.format(received_list[22][1][0]))
+    print('Calculation time in ms: {:.3}'.format(received_list[22][1][0] / 240000))
+
+    err_ft18 = ft[18] - received_list[23][0]
+    print('Feature 15 error: {:.3}'.format(np.max(np.abs(err_ft18))))
+    print('Calculation time in clock cycles: {}'.format(received_list[23][1][0]))
+    print('Calculation time in ms: {:.3}'.format(received_list[23][1][0] / 240000))
+
+    err_ft19 = ft[19] - received_list[24][0]
+    print('Feature 15 error: {:.3}'.format(np.max(np.abs(err_ft19))))
+    print('Calculation time in clock cycles: {}'.format(received_list[24][1][0]))
+    print('Calculation time in ms: {:.3}'.format(received_list[24][1][0] / 240000))
+
+    err_ft20 = ft[20] - received_list[25][0]
+    print('Feature 15 error: {:.3}'.format(np.max(np.abs(err_ft20))))
+    print('Calculation time in clock cycles: {}'.format(received_list[25][1][0]))
+    print('Calculation time in ms: {:.3}'.format(received_list[25][1][0] / 240000))
+
+    err_ft21 = ft[21] - received_list[26][0]
+    print('Feature 15 error: {:.3}'.format(np.max(np.abs(err_ft21))))
+    print('Calculation time in clock cycles: {}'.format(received_list[26][1][0]))
+    print('Calculation time in ms: {:.3}'.format(received_list[26][1][0] / 240000))

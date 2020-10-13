@@ -6,6 +6,7 @@ from os.path import join
 
 import matplotlib.pyplot as plt
 import numpy as np
+import functions
 
 
 def calculate_features(signal_input):

@@ -16,14 +16,15 @@ class MomentValues:
     # E[x] = mean(x) when the probability p(x) is equal for every sample
     # Mpq = E[x^(p-q).x*^q]
     def __init__(self, signal_input):
-        self.m20 = np.mean(np.power(signal_input, 2 - 0) * np.power(np.conj(signal_input), 0))
-        self.m21 = np.mean(np.power(signal_input, 2 - 1) * np.power(np.conj(signal_input), 1))
-        self.m22 = np.mean(np.power(signal_input, 2 - 2) * np.power(np.conj(signal_input), 2))
-        self.m40 = np.mean(np.power(signal_input, 4 - 0) * np.power(np.conj(signal_input), 0))
-        self.m41 = np.mean(np.power(signal_input, 4 - 1) * np.power(np.conj(signal_input), 1))
-        self.m42 = np.mean(np.power(signal_input, 4 - 2) * np.power(np.conj(signal_input), 2))
-        self.m43 = np.mean(np.power(signal_input, 4 - 3) * np.power(np.conj(signal_input), 3))
-        self.m60 = np.mean(np.power(signal_input, 6 - 0) * np.power(np.conj(signal_input), 0))
+        self.m20 = np.mean(signal_input ** 2)
+        self.m21 = np.mean(signal_input * np.conj(signal_input))
+        self.m22 = np.mean(np.conj(signal_input) ** 2)
+        self.m40 = np.mean(signal_input ** 4)
+
+        self.m41 = np.mean(signal_input * signal_input * signal_input * np.conj(signal_input))
+        self.m42 = np.mean(signal_input * signal_input * np.conj(signal_input) * np.conj(signal_input))
+        self.m43 = np.mean(signal_input * np.conj(signal_input) * np.conj(signal_input) * np.conj(signal_input))
+        self.m60 = np.mean(np.power(signal_input, 6))
         self.m61 = np.mean(np.power(signal_input, 6 - 1) * np.power(np.conj(signal_input), 1))
         self.m62 = np.mean(np.power(signal_input, 6 - 2) * np.power(np.conj(signal_input), 2))
         self.m63 = np.mean(np.power(signal_input, 6 - 3) * np.power(np.conj(signal_input), 3))
@@ -141,7 +142,7 @@ def cumulant_42(signal_input):
 
 def cumulant_60(signal_input):
     m = MomentValues(signal_input)
-    return np.abs(m.m60 - 15 * m.m20 * m.m40 + 3 * np.power(m.m20, 3))
+    return np.abs(m.m60 - 15 * m.m20 * m.m40 + 30 * np.power(m.m20, 3))
 
 
 def cumulant_61(signal_input):
