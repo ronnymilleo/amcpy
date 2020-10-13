@@ -16,7 +16,7 @@ import features as ft
 with open("./info.json") as handle:
     info_json = json.load(handle)
 
-num_threads = 12
+num_threads = 2
 frame_size = info_json['frameSize']
 nb_of_frames = info_json['numberOfFrames']
 nb_of_snr = len(info_json['snr']['using'])
@@ -103,6 +103,8 @@ if __name__ == '__main__':
 
     for i in range(len(modulations)):
         processes[i].start()
+
+    for i in range(len(modulations)):
         processes[i].join()
 
     print('Finish')

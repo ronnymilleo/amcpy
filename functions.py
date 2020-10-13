@@ -31,37 +31,43 @@ class MomentValues:
 
 # Std of the Instantaneous Phase
 def std_dev_inst_phase(signal_input):
-    ft_output = np.std(np.angle(signal_input))
+    i = InstValues(signal_input)
+    ft_output = np.std(i.inst_phase)
     return ft_output
 
 
 # Std of the Absolute Instantaneous Phase
 def std_dev_abs_inst_phase(signal_input):
-    ft_output = np.std(np.abs(np.angle(signal_input)))
+    i = InstValues(signal_input)
+    ft_output = np.std(np.abs(i.inst_phase))
     return ft_output
 
 
 # Std of the Instantaneous Frequency
 def std_dev_inst_freq(signal_input):
-    ft_output = np.std(1 / (2 * np.pi) * np.diff(np.unwrap(np.angle(signal_input))))
+    i = InstValues(signal_input)
+    ft_output = np.std(i.inst_freq)
     return ft_output
 
 
 # Std of the Absolute Instantaneous Frequency
 def std_dev_abs_inst_freq(signal_input):
-    ft_output = np.std(np.abs(1 / (2 * np.pi) * np.diff(np.unwrap(np.angle(signal_input)))))
+    i = InstValues(signal_input)
+    ft_output = np.std(np.abs(i.inst_freq))
     return ft_output
 
 
 # Std of the Absolute CN Instantaneous Amplitude
 def std_dev_inst_cna(signal_input):
-    ft_output = np.std(np.abs(signal_input) / np.mean(np.abs(signal_input)) - 1)
+    i = InstValues(signal_input)
+    ft_output = np.std(i.inst_cna)
     return ft_output
 
 
 # Std of the CN Instantaneous Amplitude
 def std_dev_abs_inst_cna(signal_input):
-    ft_output = np.std(np.abs(np.abs(signal_input) / np.mean(np.abs(signal_input)) - 1))
+    i = InstValues(signal_input)
+    ft_output = np.std(np.abs(i.inst_cna))
     return ft_output
 
 
@@ -71,9 +77,10 @@ def mean_of_signal_magnitude(signal_input):
     return ft_output
 
 
-# Squared Mean of the CN Amplitude
-def squared_mean_of_cna(signal_input):
-    ft_output = np.power(np.mean(np.abs(signal_input) / np.mean(np.abs(signal_input)) - 1), 2)
+# Squared Mean of the Signal Magnitude
+def squared_mean_of_signal_magnitude(signal_input):
+    i = InstValues(signal_input)
+    ft_output = np.power(np.mean(i.inst_abs), 2)
     return ft_output
 
 
@@ -109,46 +116,46 @@ def kurtosis_of_abs_freq(signal_input):
 
 def cumulant_20(signal_input):
     m = MomentValues(signal_input)
-    return m.m20
+    return np.abs(m.m20)
 
 
 def cumulant_21(signal_input):
     m = MomentValues(signal_input)
-    return m.m21
+    return np.abs(m.m21)
 
 
 def cumulant_40(signal_input):
     m = MomentValues(signal_input)
-    return m.m40 - 3 * np.power(m.m20, 2)
+    return np.abs(m.m40 - 3 * np.power(m.m20, 2))
 
 
 def cumulant_41(signal_input):
     m = MomentValues(signal_input)
-    return m.m40 - 3 * m.m20 * m.m21
+    return np.abs(m.m41 - 3 * m.m20 * m.m21)
 
 
 def cumulant_42(signal_input):
     m = MomentValues(signal_input)
-    return m.m42 - np.power(np.abs(m.m20), 2) - 2 * np.power(m.m21, 2)
+    return np.abs(m.m42 - np.power(np.abs(m.m20), 2) - 2 * np.power(m.m21, 2))
 
 
 def cumulant_60(signal_input):
     m = MomentValues(signal_input)
-    return m.m60 - 15 * m.m20 * m.m40 + 30 * np.power(m.m20, 3)
+    return np.abs(m.m60 - 15 * m.m20 * m.m40 + 3 * np.power(m.m20, 3))
 
 
 def cumulant_61(signal_input):
     m = MomentValues(signal_input)
-    return m.m61 - 5 * m.m21 * m.m40 - 10 * m.m20 * m.m41 + 30 * np.power(m.m20, 2) * m.m21
+    return np.abs(m.m61 - 5 * m.m21 * m.m40 - 10 * m.m20 * m.m41 + 30 * np.power(m.m20, 2) * m.m21)
 
 
 def cumulant_62(signal_input):
     m = MomentValues(signal_input)
-    return m.m62 - 6 * m.m20 * m.m42 - 8 * m.m21 * m.m41 - m.m22 * m.m40 + \
-           6 * np.power(m.m20, 2) * m.m22 + 24 * np.power(m.m21, 2) * m.m20
+    return np.abs(m.m62 - 6 * m.m20 * m.m42 - 8 * m.m21 * m.m41 - m.m22 * m.m40 + \
+                  6 * np.power(m.m20, 2) * m.m22 + 24 * np.power(m.m21, 2) * m.m20)
 
 
 def cumulant_63(signal_input):
     m = MomentValues(signal_input)
-    return m.m63 - 9 * m.m21 * m.m42 + 12 * np.power(m.m21, 3) - 3 * m.m20 * m.m43 - \
-           3 * m.m22 * m.m41 + 18 * m.m20 * m.m21 * m.m22
+    return np.abs(m.m63 - 9 * m.m21 * m.m42 + 12 * np.power(m.m21, 3) - 3 * m.m20 * m.m43 - \
+                  3 * m.m22 * m.m41 + 18 * m.m20 * m.m21 * m.m22)
