@@ -127,7 +127,7 @@ def cumulant_21(signal_input):
 
 def cumulant_40(signal_input):
     m = MomentValues(signal_input)
-    return np.abs(m.m40 - 3 * np.power(m.m20, 2))
+    return np.abs(m.m40 - 3 * m.m20 * m.m20)
 
 
 def cumulant_41(signal_input):
@@ -142,7 +142,7 @@ def cumulant_42(signal_input):
 
 def cumulant_60(signal_input):
     m = MomentValues(signal_input)
-    return np.abs(m.m60 - 15 * m.m20 * m.m40 + 30 * np.power(m.m20, 3))
+    return np.abs(m.m60 - 15 * m.m20 * m.m40 + 3 * np.power(m.m20, 3))
 
 
 def cumulant_61(signal_input):
