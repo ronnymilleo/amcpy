@@ -307,11 +307,30 @@ if __name__ == '__main__':
     # train_rna(HyperParameter(None))
     loaded_model, loaded_model_id = get_model_from_id(' ')
     layer_numbers = [0, 1, 3, 5, 6]
+    quantized = []
+    dequantized_w = []
+    k = 0
     # evaluate_rna(loaded_model)
     for n in layer_numbers:
-        quantized = quantize_rna(loaded_model.layers[n].get_weights(), q_type=tf.dtypes.qint16)
-        dequantized_w = dequantize_rna(loaded_model.layers[n].get_weights(), quantized)
-        error_w = get_quantization_error(loaded_model.layers[n].get_weights()[0], dequantized_w[0])
+        quantized.append(quantize_rna(loaded_model.layers[n].get_weights(), q_type=tf.dtypes.qint16))
+        dequantized_w.append(dequantize_rna(loaded_model.layers[n].get_weights(), quantized[k]))
+        error_w = get_quantization_error(loaded_model.layers[n].get_weights()[0], dequantized_w[k][0])
         print('Max error INPUT LAYER {} W: {}'.format(n, np.max(error_w)))
-        error_b = get_quantization_error(loaded_model.layers[n].get_weights()[1], dequantized_w[1])
+        error_b = get_quantization_error(loaded_model.layers[n].get_weights()[1], dequantized_w[k][1])
         print('Max error INPUT LAYER {} B: {}'.format(n, np.max(error_b)))
+        k = k + 1
+
+    # Convert quantized weights into numpy arrays
+    l1 = np.reshape(quantized[0][0][0].numpy(), (22 * 22,))
+    b1 = quantized[0][1][0].numpy()
+    l2 = np.reshape(quantized[1][0][0].numpy(), (22 * 22,))
+    b2 = quantized[1][1][0].numpy()
+    l3 = np.reshape(quantized[2][0][0].numpy(), (22 * 18,))
+    b3 = quantized[2][1][0].numpy()
+    l4 = np.reshape(quantized[3][0][0].numpy(), (18 * 14,))
+    b4 = quantized[3][1][0].numpy()
+    l5 = np.reshape(quantized[4][0][0].numpy(), (14 * 6,))
+    b5 = quantized[4][1][0].numpy()
+
+    weights = np.concatenate((l1, l2, l3, l4, l5))
+    biases = np.concatenate((b1, b2, b3, b4, b5))
