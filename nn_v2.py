@@ -1,9 +1,12 @@
+import struct
 import time
 import uuid
 
 import matplotlib.pyplot as plt
 import pandas as pd
+import scipy.io
 import seaborn as sns
+import serial
 import tensorflow as tf
 import wandb
 from sklearn.metrics import accuracy_score
@@ -12,6 +15,8 @@ from tensorflow.keras.layers import Dense, Dropout
 from tensorflow.keras.models import load_model
 from wandb.keras import WandbCallback
 
+import features
+import functions
 from preprocessing import *
 
 gpus = tf.config.list_physical_devices('GPU')
@@ -31,14 +36,14 @@ class HyperParameter:
     def __init__(self, arguments):
         if arguments is None:
             self.default = True
-            self.dropout = 0.3
-            self.epochs = 50
+            self.dropout = 0.2
+            self.epochs = 25
             self.optimizer = 'adam'
             self.initializer = 'he_normal'
             self.layer_size_hl1 = 22
             self.layer_size_hl2 = 18
             self.layer_size_hl3 = 14
-            self.activation = 'tanh'
+            self.activation = 'sigmoid'
             self.batch_size = 32
         else:
             self.default = False
@@ -80,6 +85,23 @@ def create_model(cfg: HyperParameter) -> Sequential:  # Return sequential model
     model.add(Dense(len(modulation_list), activation='softmax'))
     model.compile(optimizer=cfg.optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
     return model
+
+
+def get_model_from_id(model_id: str):
+    if model_id == ' ':  # If you do not specify a RNA id, it'll use the newest available in rna_folder
+        aux = [f for f in os.listdir(rna_folder) if "rna" in f]
+        rna_files = [join(str(rna_folder), item) for item in aux]
+        input_id = max(rna_files, key=os.path.getctime)
+        print("\nRNA ID not provided. Using RNA model with id {}, created at {} instead.".format(
+            input_id.split("-")[1].split(".")[0], time.ctime(os.path.getmtime(input_id))))
+        input_id = input_id.split("-")[1].split(".")[0]
+        rna = join(str(rna_folder), "rna-" + input_id + ".h5")
+        model = load_model(rna)  # Loads the RNA model
+    else:
+        rna = join(str(rna_folder), "rna-" + model_id + ".h5")
+        model = load_model(rna)
+        print("\nUsing RNA with id {}.".format(model_id))
+    return model, model_id
 
 
 def train_rna(cfg: HyperParameter):
@@ -173,23 +195,6 @@ def train_rna(cfg: HyperParameter):
     plt.close(figure)
 
 
-def get_model_from_id(model_id: str):
-    if model_id == ' ':  # If you do not specify a RNA id, it'll use the newest available in rna_folder
-        aux = [f for f in os.listdir(rna_folder) if "rna" in f]
-        rna_files = [join(str(rna_folder), item) for item in aux]
-        input_id = max(rna_files, key=os.path.getctime)
-        print("\nRNA ID not provided. Using RNA model with id {}, created at {} instead.".format(
-            input_id.split("-")[1].split(".")[0], time.ctime(os.path.getmtime(input_id))))
-        input_id = input_id.split("-")[1].split(".")[0]
-        rna = join(str(rna_folder), "rna-" + input_id + ".h5")
-        model = load_model(rna)  # Loads the RNA model
-    else:
-        rna = join(str(rna_folder), "rna-" + model_id + ".h5")
-        model = load_model(rna)
-        print("\nUsing RNA with id {}.".format(model_id))
-    return model, model_id
-
-
 def evaluate_rna(evaluate_loaded_model):  # Make a prediction using some samples
     print("\nStarting RNA evaluation by SNR.")
     # For each modulation, randomly loads the test_size samples
@@ -231,6 +236,17 @@ def accuracy_graphic(result):
     plt.show()
     # figure.clf()
     # plt.close(figure)
+
+
+def quantize_data(input_array, q_type: tf.dtypes):
+    min_range = np.min(input_array)
+    # print('Min value: {}'.format(min_range))
+    max_range = np.max(input_array)
+    # print('Max value: {}'.format(max_range))
+    quantized_data = tf.quantization.quantize(
+        input_array, min_range, max_range, q_type, mode='SCALED'
+    )
+    return quantized_data
 
 
 def quantize_rna(input_array, q_type: tf.dtypes):
@@ -282,12 +298,247 @@ def dequantize_rna(original_array, input_array):
 def get_quantization_error(original_weights, dequantized_weights):
     # TODO: quantization error graphics
     err = original_weights - dequantized_weights
-    plt.plot(err)
-    plt.show()
+    # plt.plot(err)
+    # plt.show()
     return err
 
 
+def receive_data(port: serial.Serial()) -> (float, int):
+    # print('Receiving data...')
+    data = []
+    real = np.zeros((2048,), dtype=np.float32)
+    imag = np.zeros((2048,), dtype=np.float32)
+    start = 0
+    while True:
+        a = port.read(size=4)
+        if a == b'\xCA\xCA\xCA\xCA':
+            # print('Head')
+            start = 1
+        elif a == b'\xF0\xF0\xF0\xF0':
+            # print('Tail')
+            break
+        elif start == 1:
+            data.append(a)
+
+    # print('Data length: {}'.format(len(data)))
+    if len(data) == 44:
+        num_array = np.zeros((22,), dtype=np.float32)
+        counter_array = np.zeros((22,), dtype=np.int32)
+    else:
+        num_array = np.zeros((len(data) - 1,), dtype=np.float32)
+        counter_array = np.zeros((1,), dtype=np.int32)
+    if len(data) == 2:  # Prediction
+        print('Prediction')
+        new_data = b''.join(data)
+        num_array = struct.unpack('<f', new_data[0:4])
+        counter_array = struct.unpack('<i', new_data[4:8])
+    elif len(data) == 44:  # Features and counters
+        print('Features')
+        new_data = b''.join(data)
+        for x in range(0, 22):
+            aux = struct.unpack('<f', new_data[x * 4:x * 4 + 4])
+            num_array[x] = aux[0]
+        for x in range(22, 44):
+            aux = struct.unpack('<i', new_data[x * 4:x * 4 + 4])
+            counter_array[x - 22] = aux[0]
+    elif len(data) == frameSize + 1:  # Data
+        print('Inst values')
+        new_data = b''.join(data)
+        for x in range(0, frameSize):
+            aux = struct.unpack('<f', new_data[x * 4:x * 4 + 4])
+            num_array[x] = aux[0]
+        counter_array = struct.unpack('<i', new_data[frameSize * 4:frameSize * 4 + 4])
+    elif len(data) > frameSize + 1:  # Echo
+        print('Echo')
+        new_data = b''.join(data)
+        for x in range(0, frameSize * 8, 8):
+            r = struct.unpack('<f', new_data[x:x + 4])
+            i = struct.unpack('<f', new_data[x + 4:x + 8])
+            real[x // 8] = r[0]
+            imag[x // 8] = i[0]
+        num_array = None
+        counter_array = None
+    return num_array, counter_array, real, imag
+
+
+def receive_wandb(port, size):
+    # print('Receiving data...')
+    data = []
+    np_array = np.zeros((size,), dtype=np.int16)
+    start = 0
+    while True:
+        a = port.read(size=2)
+        if a == b'\xCA\xCA':
+            # print('Head')
+            start = 1
+        elif a == b'\xF0\xF0':
+            # print('Tail')
+            break
+        elif start == 1:
+            data.append(a)
+
+    for x in range(0, size):
+        aux = struct.unpack('<h', data[x])
+        np_array[x] = aux[0]
+
+    return np_array
+
+
+def serial_communication():
+    # Filename setup
+    mat_file_name = pathlib.Path(join(os.getcwd(), 'mat-data', 'all_modulations_data.mat'))
+
+    # Dictionary to access variable inside MAT file
+    info = {'BPSK': 'signal_bpsk',
+            'QPSK': 'signal_qpsk',
+            'PSK8': 'signal_8psk',
+            'QAM16': 'signal_qam16',
+            'QAM64': 'signal_qam64',
+            'noise': 'signal_noise'}
+
+    # Load MAT file and parse data
+    data_mat = scipy.io.loadmat(mat_file_name)
+    print(str(mat_file_name) + ' file loaded...')
+
+    # Setup UART COM on Windows
+    ser = serial.Serial(port='COM3', baudrate=115200, parity='N', bytesize=8, stopbits=1, timeout=1)
+
+    snr_range = np.linspace(11, 15, 5, dtype=np.int16)  # 12 14 16 18 20
+    frame_range = np.linspace(0, 4, 5, dtype=np.int16)
+
+    # Write to UART
+    print('Transmitting Neural Network...')
+    for point in range(0, 1700):
+        binary = struct.pack('<h', weights[point])
+        ser.write(binary)
+    for point in range(0, 82):
+        binary = struct.pack('<h', biases[point])
+        ser.write(binary)
+
+    received_wandb = receive_wandb(ser, 1782)
+
+    err_weights = received_wandb[0:1700] - weights
+    if np.max(err_weights) == 0:
+        print('Weights loaded successfully')
+    else:
+        print('Error loading weights')
+    err_biases = received_wandb[1700:1782] - biases
+    if np.max(err_biases) == 0:
+        print('Biases loaded successfully')
+    else:
+        print('Error loading biases')
+
+    print('Wait...')
+    time.sleep(3)
+    print('Starting modulation signals transmission!')
+
+    for mod in modulation_list:
+        # Create error information arrays and features results from microcontroller
+        err_abs_vector = []
+        err_phase_vector = []
+        err_unwrapped_phase_vector = []
+        err_freq_vector = []
+        err_cn_abs_vector = []
+        err_features = []
+        predictions = []
+        gathered_data = []
+        parsed_signal = data_mat[info[mod]]
+        print('Modulation = ' + mod)
+        for snr in snr_range:
+            print('SNR = {}'.format(snr))
+            for frame in frame_range:
+                print('Frame = {}'.format(frame))
+                i_values = functions.InstValues(parsed_signal[snr, frame, 0:frameSize])
+                ft = np.float32(features.calculate_features(parsed_signal[snr, frame, 0:frameSize]))
+                q_ft = quantize_data(ft, q_type=tf.dtypes.qint16)
+                print('Quantized features: {}'.format(q_ft))
+                # Write to UART
+                print('Transmitting...')
+                for point in range(0, 2048):
+                    binary = struct.pack('<f', np.real(parsed_signal[snr, frame, point]))
+                    ser.write(binary)
+                    binary = struct.pack('<f', np.imag(parsed_signal[snr, frame, point]))
+                    ser.write(binary)
+
+                received_list = []
+                for results in range(1, 3):
+                    num_array, counter_array, real, imag = receive_data(ser)
+                    if results == 0:
+                        err = False
+                        for n in range(0, 2048):
+                            if abs(real[n] - np.real(parsed_signal[snr, frame, n])) > 0:
+                                err = True
+                                print('Error at real sample number {}'.format(n))
+                            if abs(imag[n] - np.imag(parsed_signal[snr, frame, n])) > 0:
+                                err = True
+                                print('Error at real sample number {}'.format(n))
+                        if err:
+                            received_list.append((0, 0))
+                        else:
+                            print('Echo ok - data validated')
+                            received_list.append([real, imag])
+                    else:
+                        received_list.append([num_array, counter_array])
+
+                # err_abs_vector.append(i_values.inst_abs.T - received_list[1][0])
+                # print('Inst absolute max error: {:.3}'.format(np.max(np.abs(err_abs_vector))))
+                # print('Calc time in clock cycles: {}'.format(received_list[1][1][0]))
+                # print('Calc time in ms: {:.3}'.format(received_list[1][1][0] / 200000))
+                #
+                # err_phase_vector.append(i_values.inst_phase.T - received_list[2][0])
+                # print('Inst phase max error: {:.3}'.format(np.max(np.abs(err_phase_vector))))
+                # print('Calc time in clock cycles: {}'.format(received_list[2][1][0]))
+                # print('Calc time in ms: {:.3}'.format(received_list[2][1][0] / 200000))
+                #
+                # err_unwrapped_phase_vector.append(i_values.inst_unwrapped_phase.T - received_list[3][0])
+                # print('Inst unwrapped phase max error: {:.3}'.format(np.max(np.abs(err_unwrapped_phase_vector))))
+                # print('Calc time in clock cycles: {}'.format(received_list[3][1][0]))
+                # print('Calc time in ms: {:.3}'.format(received_list[3][1][0] / 200000))
+                #
+                # err_freq_vector.append(i_values.inst_freq[0:frameSize - 1].T - received_list[4][0][0:frameSize - 1])
+                # print('Inst frequency max error: {:.3}'.format(np.max(np.abs(err_freq_vector))))
+                # print('Calc time in clock cycles: {}'.format(received_list[4][1][0]))
+                # print('Calc time in ms: {:.3}'.format(received_list[4][1][0] / 200000))
+                #
+                # err_cn_abs_vector.append(i_values.inst_cna.T - received_list[5][0])
+                # print('Inst CN amplitude max error: {:.3}'.format(np.max(np.abs(err_cn_abs_vector))))
+                # print('Calc time in clock cycles: {}'.format(received_list[5][1][0]))
+                # print('Calc time in ms: {:.3}'.format(received_list[5][1][0] / 200000))
+
+                # err_features.append(ft - received_list[6][0])
+                # print('Error list: {}'.format(err_features))
+                # print('Timings list: {}'.format(received_list[6][1]))
+                # print('Timings list (ms): {}'.format(received_list[6][1] / 200000))
+
+                err_features.append(ft - received_list[0][0])
+                print('Error list: {}'.format(err_features))
+                print('Timings list: {}'.format(received_list[0][1]))
+                print('Timings list (ms): {}'.format(received_list[0][1] / 200000))
+
+                predictions.append(received_list[1][0])
+                print('Predictions for ' + mod + ': {}'.format(predictions))
+                print('Wait...')
+                gathered_data.append(received_list)
+                save_dict = {'Modulation': mod, 'SNR': snr, 'Frame': frame,
+                             'Data': received_list, 'inst_values': i_values,
+                             'features': ft}
+                file_name = mod + '_' + str(snr) + '_' + str(frame) + '.mat'
+                scipy.io.savemat(pathlib.Path(join(os.getcwd(), 'arm-data', file_name)), save_dict)
+                time.sleep(3)
+
+        save_dict = {'Data': gathered_data, 'err_abs_vector': err_abs_vector, 'err_phase_vector': err_phase_vector,
+                     'err_unwrapped_phase_vector': err_unwrapped_phase_vector, 'err_freq_vector': err_freq_vector,
+                     'err_cn_abs_vector': err_cn_abs_vector, 'err_features': err_features, 'snr_range': snr_range,
+                     'frame_range': frame_range, 'modulation': mod}
+        scipy.io.savemat(pathlib.Path(join(os.getcwd(), 'arm-data', mod + '.mat')), save_dict)
+
+
 if __name__ == '__main__':
+    with open("./info.json") as handle:
+        info_json = json.load(handle)
+
+    frameSize = info_json['frameSize']
+
     rna_folder = pathlib.Path(join(os.getcwd(), 'rna'))
     fig_folder = pathlib.Path(join(os.getcwd(), "figures"))
     data_folder = pathlib.Path(join(os.getcwd(), "mat-data", "pickle"))
@@ -304,20 +555,29 @@ if __name__ == '__main__':
     # wandb.init(project="amcpy-team", config=HyperParameter(arguments).get_dict())
     # config = wandb.config
     X_train, X_test, y_train, y_test, scaler = preprocess_data()
+
+    # Find min and max values for quantization
+    global_min = np.min([np.min(X_train), np.min(X_test)])
+    global_max = np.max([np.max(X_train), np.max(X_test)])
+    print('Global min and max:')
+    print('Min: {}'.format(global_min))
+    print('Max: {}'.format(global_max))
+
     # train_rna(HyperParameter(None))
     loaded_model, loaded_model_id = get_model_from_id(' ')
+    evaluate_rna(loaded_model)
+
     layer_numbers = [0, 1, 3, 5, 6]
     quantized = []
     dequantized_w = []
     k = 0
-    # evaluate_rna(loaded_model)
-    for n in layer_numbers:
-        quantized.append(quantize_rna(loaded_model.layers[n].get_weights(), q_type=tf.dtypes.qint16))
-        dequantized_w.append(dequantize_rna(loaded_model.layers[n].get_weights(), quantized[k]))
-        error_w = get_quantization_error(loaded_model.layers[n].get_weights()[0], dequantized_w[k][0])
-        print('Max error INPUT LAYER {} W: {}'.format(n, np.max(error_w)))
-        error_b = get_quantization_error(loaded_model.layers[n].get_weights()[1], dequantized_w[k][1])
-        print('Max error INPUT LAYER {} B: {}'.format(n, np.max(error_b)))
+    for ln in layer_numbers:
+        quantized.append(quantize_rna(loaded_model.layers[ln].get_weights(), q_type=tf.dtypes.qint16))
+        dequantized_w.append(dequantize_rna(loaded_model.layers[ln].get_weights(), quantized[k]))
+        error_w = get_quantization_error(loaded_model.layers[ln].get_weights()[0], dequantized_w[k][0])
+        print('Max error INPUT LAYER {} W: {}'.format(ln, np.max(error_w)))
+        error_b = get_quantization_error(loaded_model.layers[ln].get_weights()[1], dequantized_w[k][1])
+        print('Max error INPUT LAYER {} B: {}'.format(ln, np.max(error_b)))
         k = k + 1
 
     # Convert quantized weights into numpy arrays
@@ -334,3 +594,5 @@ if __name__ == '__main__':
 
     weights = np.concatenate((l1, l2, l3, l4, l5))
     biases = np.concatenate((b1, b2, b3, b4, b5))
+
+    serial_communication()

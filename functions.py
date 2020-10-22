@@ -5,11 +5,11 @@ from scipy import stats
 class InstValues:
     # For debug purposes only
     def __init__(self, signal_input):
-        self.inst_abs = np.abs(signal_input)
-        self.inst_phase = np.angle(signal_input)
-        self.inst_unwrapped_phase = np.unwrap(np.angle(signal_input))
-        self.inst_freq = 1 / (2 * np.pi) * np.diff(np.unwrap(np.angle(signal_input)))
-        self.inst_cna = np.abs(signal_input) / np.mean(np.abs(signal_input)) - 1
+        self.inst_abs = np.float32(np.abs(signal_input))
+        self.inst_phase = np.float32(np.angle(signal_input))
+        self.inst_unwrapped_phase = np.float32(np.unwrap(np.angle(signal_input)))
+        self.inst_freq = np.float32(1 / (2 * np.pi) * np.diff(np.unwrap(np.angle(signal_input))))
+        self.inst_cna = np.float32(np.abs(signal_input) / np.mean(np.abs(signal_input)) - 1)
 
 
 class MomentValues:
