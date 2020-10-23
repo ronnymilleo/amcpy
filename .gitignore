@@ -1,8 +1,4 @@
 /figures/
-/gr-data/
-/mat-data/
-/old/
-/rna/
 /wandb/
 /.idea/
 /.vscode/
@@ -10,4 +6,9 @@
 /vscode.env/
 /venv/
 *.gif
+*.png
+*.mat
+*.html
+*.pickle
+*.h5
 sweep.yaml

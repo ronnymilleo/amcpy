@@ -3,10 +3,6 @@
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
       <excludeFolder url="file://$MODULE_DIR$/.idea/codeStyles" />
-      <excludeFolder url="file://$MODULE_DIR$/figures" />
-      <excludeFolder url="file://$MODULE_DIR$/gr-data" />
-      <excludeFolder url="file://$MODULE_DIR$/mat-data" />
-      <excludeFolder url="file://$MODULE_DIR$/rna" />
       <excludeFolder url="file://$MODULE_DIR$/wandb" />
     </content>
     <orderEntry type="jdk" jdkName="Python 3.8" jdkType="Python SDK" />
