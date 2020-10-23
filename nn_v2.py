@@ -1,3 +1,4 @@
+import argparse
 import struct
 import time
 import uuid
@@ -9,8 +10,10 @@ import seaborn as sns
 import serial
 import tensorflow as tf
 import wandb
+from keras.optimizers import RMSprop, SGD, Adam
 from sklearn.metrics import accuracy_score
 from tensorflow.keras import Sequential
+from tensorflow.keras import regularizers
 from tensorflow.keras.layers import Dense, Dropout
 from tensorflow.keras.models import load_model
 from wandb.keras import WandbCallback
@@ -36,54 +39,79 @@ class HyperParameter:
     def __init__(self, arguments):
         if arguments is None:
             self.default = True
+            self.activation = 'sigmoid'
+            self.batch_size = 32
             self.dropout = 0.2
             self.epochs = 25
-            self.optimizer = 'adam'
             self.initializer = 'he_normal'
             self.layer_size_hl1 = 22
             self.layer_size_hl2 = 18
             self.layer_size_hl3 = 14
-            self.activation = 'sigmoid'
-            self.batch_size = 32
+            self.learning_rate = 1e-3
+            self.optimizer = 'adam'
         else:
             self.default = False
+            self.activation = arguments.activation
+            self.batch_size = int(arguments.batch_size)
             self.dropout = round(float(arguments.dropout), 2)
             self.epochs = int(arguments.epochs)
-            self.optimizer = arguments.optimizer
-            self.activation = arguments.activation
-            self.initializer = arguments.initializer
+            self.initializer = 'he_normal'
             self.layer_size_hl1 = int(arguments.layer_size_hl1)
             self.layer_size_hl2 = int(arguments.layer_size_hl2)
             self.layer_size_hl3 = int(arguments.layer_size_hl3)
-            self.batch_size = 32
+            self.learning_rate = float(arguments.learning_rate)
+            self.optimizer = arguments.optimizer
 
     def get_dict(self):
-        return dict(dropout=round(float(self.dropout), 2),
+        return dict(activation=self.activation,
+                    batch_size=int(self.batch_size),
+                    dropout=round(float(self.dropout), 2),
                     epochs=int(self.epochs),
-                    optimizer=self.optimizer,
-                    activation=self.activation,
                     initializer=self.initializer,
                     layer_size_hl1=int(self.layer_size_hl1),
                     layer_size_hl2=int(self.layer_size_hl2),
-                    layer_size_hl3=int(self.layer_size_hl3)
+                    layer_size_hl3=int(self.layer_size_hl3),
+                    optimizer=self.optimizer
                     )
 
 
 def create_model(cfg: HyperParameter) -> Sequential:  # Return sequential model
-    # Here is where the magic really happens! Check this out:
-    model = Sequential()  # The model used is the sequential
-    # It has a fully connected input layer
-    model.add(Dense(number_of_features, activation=cfg.activation,
-                    input_shape=(number_of_features,)))
-    # With three others hidden layers
-    model.add(Dense(cfg.layer_size_hl1, activation=cfg.activation))
-    # And a dropout layer between them to avoid overfitting
+    model = Sequential()
+    model.add(Dense(number_of_features,
+                    activation=cfg.activation,
+                    input_shape=(number_of_features,),
+                    kernel_regularizer=regularizers.l2(0.001)))
+
     model.add(Dropout(cfg.dropout))
-    model.add(Dense(cfg.layer_size_hl2, activation=cfg.activation))
+    model.add(Dense(cfg.layer_size_hl1,
+                    activation=cfg.activation,
+                    kernel_regularizer=regularizers.l2(0.001)))
+
     model.add(Dropout(cfg.dropout))
-    model.add(Dense(cfg.layer_size_hl3, activation=cfg.activation))
-    model.add(Dense(len(modulation_list), activation='softmax'))
-    model.compile(optimizer=cfg.optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
+    model.add(Dense(cfg.layer_size_hl2,
+                    activation=cfg.activation,
+                    kernel_regularizer=regularizers.l2(0.001)))
+
+    model.add(Dropout(cfg.dropout))
+    model.add(Dense(cfg.layer_size_hl3,
+                    activation=cfg.activation,
+                    kernel_regularizer=regularizers.l2(0.001)))
+
+    model.add(Dropout(cfg.dropout))
+    model.add(Dense(len(modulation_list),
+                    activation='softmax'))
+
+    if cfg.optimizer == 'sgd':
+        optimizer = SGD(learning_rate=cfg.learning_rate)
+    elif cfg.optimizer == 'rmsprop':
+        optimizer = RMSprop(learning_rate=cfg.learning_rate)
+    elif cfg.optimizer == 'adam':
+        optimizer = Adam(learning_rate=cfg.learning_rate)
+
+    model.compile(optimizer=optimizer,
+                  loss='categorical_crossentropy',
+                  metrics=['categorical_crossentropy']
+                  )
     return model
 
 
@@ -104,9 +132,9 @@ def get_model_from_id(model_id: str):
     return model, model_id
 
 
-def train_rna(cfg: HyperParameter):
+def train_rna(cfg):
     new_id = str(uuid.uuid1()).split('-')[0]  # Generates a unique id to each RNA created
-
+    # Create tensors from dataset
     X_train_tensor = tf.convert_to_tensor(
         X_train, dtype=np.float32, name='X_train'
     )
@@ -117,42 +145,41 @@ def train_rna(cfg: HyperParameter):
     depth = len(modulation_list)
     y_train_tensor = tf.one_hot(y_train, depth)
     y_test_tensor = tf.one_hot(y_test, depth)
-
+    # Instantiate model
     model = create_model(cfg)
     # Once created, the model is then compiled, trained and saved for further evaluation
     # batch_size = number of samples per gradient update
-    # verbose = 0 = silent, 1 = progress bar, 2 = one line per epoch
-    if cfg.default:
-        # Default mode
-        history = model.fit(X_train_tensor, y_train_tensor, batch_size=cfg.batch_size, epochs=cfg.epochs, verbose=2)
-    else:
-        # Execute code only if wandb is activated
-        history = model.fit(X_train_tensor, y_train_tensor, batch_size=cfg.batch_size, epochs=cfg.epochs, verbose=2,
-                            callbacks=[WandbCallback(validation_data=(X_test_tensor, y_test_tensor))])
+    # verbose >> 0 = silent, 1 = progress bar, 2 = one line per epoch
+
+    # Execute code only if wandb is activated
+    history = model.fit(X_train_tensor, y_train_tensor, batch_size=cfg.batch_size, epochs=cfg.epochs, verbose=2,
+                        validation_data=(X_test_tensor, y_test_tensor),
+                        callbacks=[WandbCallback(validation_data=(X_test_tensor, y_test_tensor))])
 
     model.save(str(join(rna_folder, 'rna-' + new_id + '.h5')))
     model.save_weights(str(join(rna_folder, 'weights-' + new_id + '.h5')))
     print(join("\nRNA saved with id ", new_id, "\n").replace("\\", ""))
 
     # Here is where we make the first evaluation of the RNA
-    loss, acc = model.evaluate(X_test_tensor, y_test_tensor, batch_size=cfg.batch_size, verbose=2)
-    print('Test Accuracy: %.3f' % acc)
+    loss, acc = model.evaluate(X_test_tensor, y_test_tensor,
+                               batch_size=cfg.batch_size,
+                               verbose=2)
+    print('Test Accuracy: {}'.format(acc))
 
-    # Execute code only if wandb is activated
-    if cfg.default is False:
-        # Here, WANDB takes place and logs all metrics to the cloud
-        metrics = {'accuracy': acc,
-                   'loss': loss,
-                   'dropout': cfg.dropout,
-                   'epochs': cfg.epochs,
-                   'initializer': cfg.initializer,
-                   'layer_syze_hl1': cfg.layer_size_hl1,
-                   'layer_syze_hl2': cfg.layer_size_hl2,
-                   'layer_syze_hl3': cfg.layer_size_hl3,
-                   'optimizer': cfg.optimizer,
-                   'activation': cfg.activation,
-                   'id': new_id}
-        wandb.log(metrics)
+    # Here, WANDB takes place and logs all metrics to the cloud
+    metrics = {'accuracy': acc,
+               'loss': loss,
+               'dropout': cfg.dropout,
+               'epochs': cfg.epochs,
+               'optimizer': cfg.optimizer,
+               'activation': cfg.activation,
+               'initializer': cfg.initializer,
+               'layer_syze_hl1': cfg.layer_size_hl1,
+               'layer_syze_hl2': cfg.layer_size_hl2,
+               'layer_syze_hl3': cfg.layer_size_hl3,
+               'batch_size': cfg.batch_size,
+               'id': new_id}
+    wandb.log(metrics)
 
     # Here we make a prediction using the test data...
     print('\nStarting prediction')
@@ -176,7 +203,7 @@ def train_rna(cfg: HyperParameter):
 
     plt.clf()
     plt.plot(history.history['accuracy'])
-    # plt.plot(history.history['val_accuracy'])
+    plt.plot(history.history['val_accuracy'])
     plt.title('Model accuracy')
     plt.ylabel('Accuracy')
     plt.xlabel('Epoch')
@@ -185,7 +212,7 @@ def train_rna(cfg: HyperParameter):
 
     plt.clf()
     plt.plot(history.history['loss'])
-    # plt.plot(history.history['val_loss'])
+    plt.plot(history.history['val_loss'])
     plt.title('Model loss')
     plt.ylabel('Loss')
     plt.xlabel('Epoch')
@@ -223,7 +250,7 @@ def evaluate_rna(evaluate_loaded_model):  # Make a prediction using some samples
 def accuracy_graphic(result):
     # Then, it creates an accuracy graphic, containing the
     # prediction result to all snr values and all modulations
-    # figure = plt.figure(figsize=(8, 4), dpi=150)
+    plt.figure(figsize=(6, 3), dpi=200)
     plt.title("Accuracy")
     plt.ylabel("Right prediction")
     plt.xlabel("SNR [dB]")
@@ -536,63 +563,63 @@ def serial_communication():
 if __name__ == '__main__':
     with open("./info.json") as handle:
         info_json = json.load(handle)
-
     frameSize = info_json['frameSize']
 
     rna_folder = pathlib.Path(join(os.getcwd(), 'rna'))
     fig_folder = pathlib.Path(join(os.getcwd(), "figures"))
     data_folder = pathlib.Path(join(os.getcwd(), "mat-data", "pickle"))
-    # parser = argparse.ArgumentParser(description='RNA argument parser')
-    # parser.add_argument('--dropout', action='store', dest='dropout')
-    # parser.add_argument('--epochs', action='store', dest='epochs')
-    # parser.add_argument('--optimizer', action='store', dest='optimizer')
-    # parser.add_argument('--initializer', action='store', dest='initializer')
-    # parser.add_argument('--layer_size_hl1', action='store', dest='layer_size_hl1')
-    # parser.add_argument('--layer_size_hl2', action='store', dest='layer_size_hl2')
-    # parser.add_argument('--layer_size_hl3', action='store', dest='layer_size_hl3')
-    # parser.add_argument('--activation', action='store', dest='activation')
-    # arguments = parser.parse_args()
-    # wandb.init(project="amcpy-team", config=HyperParameter(arguments).get_dict())
-    # config = wandb.config
+
+    training = True
+
+    # Weights and biases parser
+    parser = argparse.ArgumentParser(description='RNA argument parser')
+    parser.add_argument('--activation', action='store', dest='activation')
+    parser.add_argument('--batch_size', action='store', dest='batch_size')
+    parser.add_argument('--dropout', action='store', dest='dropout')
+    parser.add_argument('--epochs', action='store', dest='epochs')
+    parser.add_argument('--layer_size_hl1', action='store', dest='layer_size_hl1')
+    parser.add_argument('--layer_size_hl2', action='store', dest='layer_size_hl2')
+    parser.add_argument('--layer_size_hl3', action='store', dest='layer_size_hl3')
+    parser.add_argument('--learning_rate', action='store', dest='learning_rate')
+    parser.add_argument('--optimizer', action='store', dest='optimizer')
+    args = parser.parse_args()
+
+    wandb.init(project="amcpy-team", config=HyperParameter(args).get_dict())
+    config = wandb.config
+
     X_train, X_test, y_train, y_test, scaler = preprocess_data()
 
-    # Find min and max values for quantization
-    global_min = np.min([np.min(X_train), np.min(X_test)])
-    global_max = np.max([np.max(X_train), np.max(X_test)])
-    print('Global min and max:')
-    print('Min: {}'.format(global_min))
-    print('Max: {}'.format(global_max))
+    train_rna(config)
 
-    # train_rna(HyperParameter(None))
-    loaded_model, loaded_model_id = get_model_from_id(' ')
-    evaluate_rna(loaded_model)
+    if not training:
+        loaded_model, loaded_model_id = get_model_from_id(' ')
+        evaluate_rna(loaded_model)
+        layer_numbers = [0, 1, 3, 5, 6]
+        quantized = []
+        dequantized_w = []
+        k = 0
+        for ln in layer_numbers:
+            quantized.append(quantize_rna(loaded_model.layers[ln].get_weights(), q_type=tf.dtypes.qint16))
+            dequantized_w.append(dequantize_rna(loaded_model.layers[ln].get_weights(), quantized[k]))
+            error_w = get_quantization_error(loaded_model.layers[ln].get_weights()[0], dequantized_w[k][0])
+            print('Max error INPUT LAYER {} W: {}'.format(ln, np.max(error_w)))
+            error_b = get_quantization_error(loaded_model.layers[ln].get_weights()[1], dequantized_w[k][1])
+            print('Max error INPUT LAYER {} B: {}'.format(ln, np.max(error_b)))
+            k = k + 1
 
-    layer_numbers = [0, 1, 3, 5, 6]
-    quantized = []
-    dequantized_w = []
-    k = 0
-    for ln in layer_numbers:
-        quantized.append(quantize_rna(loaded_model.layers[ln].get_weights(), q_type=tf.dtypes.qint16))
-        dequantized_w.append(dequantize_rna(loaded_model.layers[ln].get_weights(), quantized[k]))
-        error_w = get_quantization_error(loaded_model.layers[ln].get_weights()[0], dequantized_w[k][0])
-        print('Max error INPUT LAYER {} W: {}'.format(ln, np.max(error_w)))
-        error_b = get_quantization_error(loaded_model.layers[ln].get_weights()[1], dequantized_w[k][1])
-        print('Max error INPUT LAYER {} B: {}'.format(ln, np.max(error_b)))
-        k = k + 1
+        # Convert quantized weights into numpy arrays
+        l1 = np.reshape(quantized[0][0][0].numpy(), (22 * 22,))
+        b1 = quantized[0][1][0].numpy()
+        l2 = np.reshape(quantized[1][0][0].numpy(), (22 * 22,))
+        b2 = quantized[1][1][0].numpy()
+        l3 = np.reshape(quantized[2][0][0].numpy(), (22 * 18,))
+        b3 = quantized[2][1][0].numpy()
+        l4 = np.reshape(quantized[3][0][0].numpy(), (18 * 14,))
+        b4 = quantized[3][1][0].numpy()
+        l5 = np.reshape(quantized[4][0][0].numpy(), (14 * 6,))
+        b5 = quantized[4][1][0].numpy()
 
-    # Convert quantized weights into numpy arrays
-    l1 = np.reshape(quantized[0][0][0].numpy(), (22 * 22,))
-    b1 = quantized[0][1][0].numpy()
-    l2 = np.reshape(quantized[1][0][0].numpy(), (22 * 22,))
-    b2 = quantized[1][1][0].numpy()
-    l3 = np.reshape(quantized[2][0][0].numpy(), (22 * 18,))
-    b3 = quantized[2][1][0].numpy()
-    l4 = np.reshape(quantized[3][0][0].numpy(), (18 * 14,))
-    b4 = quantized[3][1][0].numpy()
-    l5 = np.reshape(quantized[4][0][0].numpy(), (14 * 6,))
-    b5 = quantized[4][1][0].numpy()
+        weights = np.concatenate((l1, l2, l3, l4, l5))
+        biases = np.concatenate((b1, b2, b3, b4, b5))
 
-    weights = np.concatenate((l1, l2, l3, l4, l5))
-    biases = np.concatenate((b1, b2, b3, b4, b5))
-
-    serial_communication()
+        serial_communication()

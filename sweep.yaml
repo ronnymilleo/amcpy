@@ -1,40 +1,57 @@
-program: nn_v1.py
 method: bayes
 metric:
-  name: val_accuracy
-  goal: maximize
+  goal: minimize
+  name: val_loss
 parameters:
+  activation:
+    distribution: categorical
+    values:
+      - exponential
+      - relu
+      - tanh
+      - sigmoid
+  batch_size:
+    values:
+      - 32
+      - 64
+      - 128
+      - 256
+  dropout:
+    values:
+      - 0.05
+      - 0.1
+      - 0.15
+      - 0.2
+      - 0.25
+      - 0.3
+      - 0.35
+      - 0.4
   epochs:
     distribution: int_uniform
-    max: 500
-    min: 100
-  dropout:
-    distribution: uniform
-    max: 0.5
-    min: 0.1
+    max: 60
+    min: 15
+  layer_size_hl1:
+    distribution: int_uniform
+    max: 100
+    min: 10
+  layer_size_hl2:
+    distribution: int_uniform
+    max: 100
+    min: 10
+  layer_size_hl3:
+    distribution: int_uniform
+    max: 100
+    min: 10
+  learning_rate:
+    values:
+      - 0.01
+      - 0.001
+      - 0.0001
+      - 1e-05
   optimizer:
     distribution: categorical
     values:
       - adam
       - rmsprop
-  activation:
-    distribution: categorical
-    values:
-      - tanh
-      - sigmoid
-  layer_size_hl1:
-    distribution: int_uniform
-    max: 500
-    min: 10
-  layer_size_hl2:
-    distribution: int_uniform
-    max: 500
-    min: 10
-  layer_size_hl3:
-    distribution: int_uniform
-    max: 500
-    min: 10
-  initializer:
-    values:
-      - he_normal
-      - random_normal
+      - sgd
+program: nn_v2.py
