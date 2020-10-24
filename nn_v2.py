@@ -10,7 +10,7 @@ import seaborn as sns
 import serial
 import tensorflow as tf
 import wandb
-from keras.optimizers import RMSprop, SGD, Adam
+from keras.optimizers import RMSprop, SGD, Adam, Nadam
 from sklearn.metrics import accuracy_score
 from tensorflow.keras import Sequential
 from tensorflow.keras import regularizers
@@ -107,6 +107,8 @@ def create_model(cfg: HyperParameter) -> Sequential:  # Return sequential model
         optimizer = RMSprop(learning_rate=cfg.learning_rate)
     elif cfg.optimizer == 'adam':
         optimizer = Adam(learning_rate=cfg.learning_rate)
+    else:
+        optimizer = Nadam(learning_rate=cfg.learning_rate)
 
     model.compile(optimizer=optimizer,
                   loss='categorical_crossentropy',
@@ -224,13 +226,14 @@ def train_rna(cfg):
 
 def evaluate_rna(evaluate_loaded_model):  # Make a prediction using some samples
     print("\nStarting RNA evaluation by SNR.")
+
     # For each modulation, randomly loads the test_size samples
     # and predict the result to all SNR values
     result = np.zeros((len(modulation_list), number_of_snr))
     for i, mod in enumerate(features_files):
         print("Evaluating {}".format(mod.split("_")[0]))
-        with open(join(data_folder, mod), 'rb') as evaluating_data:
-            data = pickle.load(evaluating_data)
+        data_dict = scipy.io.loadmat(join(data_folder, mod + '_features'))
+        data = data_dict[info[mod]]
         for j, snr in enumerate(snr_list):
             X_dataset = data[j, :]  # Test over all available data
             # Fit into data used for training, results are means and variances used to standardise the data
@@ -567,7 +570,7 @@ if __name__ == '__main__':
 
     rna_folder = pathlib.Path(join(os.getcwd(), 'rna'))
     fig_folder = pathlib.Path(join(os.getcwd(), "figures"))
-    data_folder = pathlib.Path(join(os.getcwd(), "mat-data", "pickle"))
+    data_folder = pathlib.Path(join(os.getcwd(), "mat-data"))
 
     training = True
 
