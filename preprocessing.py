@@ -27,7 +27,7 @@ info = {'BPSK': 'signal_bpsk',
         'noise': 'signal_noise'}
 
 # Load dataset from MATLAB
-features_files = [f + "_features.pickle" for f in modulation_list]
+features_files = [f + "_features.mat" for f in modulation_list]
 
 
 def preprocess_data():  # Prepare the data for the magic
@@ -40,8 +40,8 @@ def preprocess_data():  # Prepare the data for the magic
     # frames to all SNR values are vertically stacked
     for i, mod in enumerate(features_files):
         print("Processing {} data".format(mod.split("_")[0]))  # Separate the word 'features' from modulation file
-        data_dict = scipy.io.loadmat(join(data_folder, mod + '_features'))
-        data = data_dict[info[mod]]
+        data_dict = scipy.io.loadmat(join(data_folder, mod))
+        data = data_dict[info[mod.split("_")[0]]]
         # Location of each modulation on input matrix based on their number of samples
         location = i * number_of_samples
 
