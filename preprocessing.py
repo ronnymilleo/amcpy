@@ -1,10 +1,10 @@
 import json
 import os
 import pathlib
-import pickle
 from os.path import join
 
 import numpy as np
+import scipy.io
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
@@ -18,17 +18,20 @@ number_of_features = len(info_json['features']['using'])
 number_of_snr = len(info_json['snr']['using'])
 snr_list = info_json['snr']['using']
 modulation_list = info_json['modulations']['names']
-# Maybe it's useful
-# snr_dict = {}
-# for a in range(0, 21):
-#     snr_dict[a] = info_json['snr']['values'][a]
+# Dictionary to access variable inside MAT file
+info = {'BPSK': 'signal_bpsk',
+        'QPSK': 'signal_qpsk',
+        'PSK8': 'signal_8psk',
+        'QAM16': 'signal_qam16',
+        'QAM64': 'signal_qam64',
+        'noise': 'signal_noise'}
 
 # Load dataset from MATLAB
 features_files = [f + "_features.pickle" for f in modulation_list]
 
 
 def preprocess_data():  # Prepare the data for the magic
-    data_folder = pathlib.Path(join(os.getcwd(), "mat-data", "pickle"))
+    data_folder = pathlib.Path(join(os.getcwd(), "mat-data"))
     number_of_samples = number_of_frames * number_of_snr
     X = np.zeros((number_of_samples * len(modulation_list), number_of_features), dtype=np.float32)
     y = np.ndarray((number_of_samples * len(modulation_list),), dtype=np.int8)
@@ -37,9 +40,8 @@ def preprocess_data():  # Prepare the data for the magic
     # frames to all SNR values are vertically stacked
     for i, mod in enumerate(features_files):
         print("Processing {} data".format(mod.split("_")[0]))  # Separate the word 'features' from modulation file
-        with open(join(data_folder, mod), 'rb') as ft_handle:
-            data = pickle.load(ft_handle)
-
+        data_dict = scipy.io.loadmat(join(data_folder, mod + '_features'))
+        data = data_dict[info[mod]]
         # Location of each modulation on input matrix based on their number of samples
         location = i * number_of_samples
 
