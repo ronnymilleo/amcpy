@@ -15,6 +15,7 @@ with open("./info.json") as json_handle:
 # Config variables based on the JSON file
 number_of_frames = info_json['numberOfFrames']
 number_of_features = len(info_json['features']['using'])
+features_list = info_json['features']['using']
 number_of_snr = len(info_json['snr']['using'])
 snr_list = info_json['snr']['using']
 modulation_list = info_json['modulations']['names']
@@ -47,7 +48,7 @@ def preprocess_data():  # Prepare the data for the magic
 
         for snr in snr_list:
             for frame in range(number_of_frames):
-                X[location, :] = np.float32(data[snr - (21 - number_of_snr)][frame][:])  # [SNR][frames][ft]
+                X[location, :] = np.float32(data[snr - (21 - number_of_snr)][frame][features_list])  # [SNR][frames][ft]
                 location += 1
 
             # An array containing the encoded labels for each modulation
