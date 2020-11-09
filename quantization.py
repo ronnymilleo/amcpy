@@ -1,4 +1,3 @@
-import os
 import pathlib
 from os.path import join
 
@@ -6,14 +5,7 @@ import numpy as np
 import scipy.io
 import tensorflow as tf
 
-# Calculate range of fixed point numbers #QM.N
-q_range = {}
-resolution = []
-for M in range(0, 7):
-    N = 15 - M
-    k = "Q{}.{}".format(M, N)
-    q_range[k] = ([-2 ** (M - 1), 2 ** (M - 1) - 2 ** (-N)])
-    resolution.append(2 ** (-N))
+from globals import arm_folder, q_range
 
 
 def get_dense_layers(model: tf.keras.Model) -> tf.keras.layers:
@@ -91,8 +83,6 @@ def get_quantization_error(original_weights, dequantized_weights):
 
 
 def quantize(model: tf.keras.Model, inputs):
-    arm_folder = pathlib.Path(join(os.getcwd(), "arm-data"))
-
     # Get weights and biases max and min floats before quantization
     d_layers = get_dense_layers(model)
     max_w = []
@@ -149,6 +139,7 @@ def quantize(model: tf.keras.Model, inputs):
         print('Max error INPUT LAYER {} B: {}'.format(n, np.max(error_b)))
         a = a + 1
 
+    # TODO: better flattening of matrices
     # Convert quantized weights into numpy arrays
     l1 = np.reshape(quantized[0][0][0].numpy().T, (6 * 6,))
     b1 = quantized[0][1][0].numpy()
@@ -163,6 +154,6 @@ def quantize(model: tf.keras.Model, inputs):
 
     weights = np.concatenate((l1, l2, l3, l4, l5))
     biases = np.concatenate((b1, b2, b3, b4, b5))
-    save_dict = {'weights': weights, 'biases': biases, 'info': layer_dict}
+    save_dict = {'weights': weights, 'biases': biases}
     scipy.io.savemat(pathlib.Path(join(arm_folder, 'w_and_b.mat')), save_dict)
-    return save_dict
+    return save_dict, layer_dict

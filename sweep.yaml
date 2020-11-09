@@ -1,35 +1,42 @@
 method: bayes
 metric:
-  goal: maximize
-  name: accuracy
+  goal: minimize
+  name: val_loss
 parameters:
   activation:
     distribution: categorical
     values:
       - relu
   batch_size:
-    distribution: int_uniform
-    max: 256
-    min: 64
+    values:
+      - 32
+      - 64
+      - 96
+      - 128
+      - 160
+      - 196
   dropout:
-    distribution: uniform
-    max: 0.5
-    min: 0.1
+    values:
+      - 0.1
+      - 0.2
+      - 0.3
+      - 0.4
+      - 0.5
   epochs:
     distribution: int_uniform
-    max: 64
-    min: 16
+    max: 100
+    min: 10
   layer_size_hl1:
     distribution: int_uniform
-    max: 90
-    min: 60
+    max: 60
+    min: 40
   layer_size_hl2:
     distribution: int_uniform
-    max: 60
-    min: 30
+    max: 40
+    min: 20
   layer_size_hl3:
     distribution: int_uniform
-    max: 30
+    max: 20
     min: 6
   learning_rate:
     distribution: uniform
@@ -38,6 +45,5 @@ parameters:
   optimizer:
     distribution: categorical
     values:
-      - adam
       - rmsprop
 program: nn_v2.py
