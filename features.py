@@ -1,24 +1,16 @@
 import json
-import os
-import pathlib
 import pickle
-from os.path import join
 
 import matplotlib.pyplot as plt
-import numpy as np
-import functions
+
+from globals import *
 
 
 def calculate_features(signal_input):
-    with open("./info.json") as handle:
-        info_json = json.load(handle)
-
     result = []
-
-    for ft in info_json['features']['using']:
-        aux = eval(info_json['features']['functions'][str(ft)])
+    for ft in used_features:
+        aux = eval(features_functions[ft])
         result.append(aux)
-
     return result
 
 

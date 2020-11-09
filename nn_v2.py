@@ -21,6 +21,7 @@ from wandb.keras import WandbCallback
 import features
 import functions
 import quantization
+from globals import *
 from preprocessing import *
 
 gpus = tf.config.list_physical_devices('GPU')
@@ -41,14 +42,14 @@ class HyperParameter:
         if arguments is None:
             self.default = True
             self.activation = 'relu'
-            self.batch_size = 256
-            self.dropout = 0.30
-            self.epochs = 20
+            self.batch_size = 128
+            self.dropout = 0.40
+            self.epochs = 50
             self.initializer = 'he_normal'
-            self.layer_size_hl1 = 36
+            self.layer_size_hl1 = 48
             self.layer_size_hl2 = 24
             self.layer_size_hl3 = 12
-            self.learning_rate = 1e-4
+            self.learning_rate = 1e-3
             self.optimizer = 'rmsprop'
         else:
             self.default = False
@@ -79,9 +80,9 @@ class HyperParameter:
 
 def create_model(cfg: HyperParameter) -> Sequential:  # Return sequential model
     model = Sequential()
-    model.add(Dense(number_of_features,
+    model.add(Dense(number_of_used_features,
                     activation=cfg.activation,
-                    input_shape=(number_of_features,),
+                    input_shape=(number_of_used_features,),
                     kernel_regularizer=regularizers.l2(0.001)))
 
     # model.add(Dropout(cfg.dropout))
@@ -100,7 +101,7 @@ def create_model(cfg: HyperParameter) -> Sequential:  # Return sequential model
                     kernel_regularizer=regularizers.l2(0.001)))
 
     # model.add(Dropout(cfg.dropout))
-    model.add(Dense(len(modulation_list),
+    model.add(Dense(len(signals),
                     activation='softmax'))
 
     if cfg.optimizer == 'rmsprop':
@@ -144,7 +145,7 @@ def train_rna(cfg):
         X_test, dtype=np.float32, name='X_test'
     )
     # Create encoded labels using tensorflow's one-hot function (to use categorical_crossentropy)
-    depth = len(modulation_list)
+    depth = len(signals)
     y_train_tensor = tf.one_hot(y_train, depth)
     y_test_tensor = tf.one_hot(y_test, depth)
     # Instantiate model
@@ -195,7 +196,7 @@ def train_rna(cfg):
         confusion_matrix.astype('float') / confusion_matrix.sum(axis=1)[:, np.newaxis],
         decimals=2)
     print(confusion_matrix_normalized)
-    cm_data_frame = pd.DataFrame(confusion_matrix_normalized, index=modulation_list, columns=modulation_list)
+    cm_data_frame = pd.DataFrame(confusion_matrix_normalized, index=signals, columns=signals)
     figure = plt.figure(figsize=(8, 4), dpi=150)
     sns.heatmap(cm_data_frame, annot=True, cmap=plt.cm.get_cmap('Blues', 6))
     plt.tight_layout()
@@ -223,6 +224,7 @@ def train_rna(cfg):
     plt.savefig(join(fig_folder, 'history_loss-' + new_id + '.png'), bbox_inches='tight', dpi=300)
 
     plt.close(figure)
+    return new_id
 
 
 def evaluate_rna(evaluate_loaded_model):  # Make a prediction using some samples
@@ -230,19 +232,19 @@ def evaluate_rna(evaluate_loaded_model):  # Make a prediction using some samples
 
     # For each modulation, randomly loads the test_size samples
     # and predict the result to all SNR values
-    result = np.zeros((len(modulation_list), number_of_snr))
-    for i, mod in enumerate(features_files):
+    result = np.zeros((len(signals), len(testing_SNR)))
+    for i, mod in enumerate(testing_features_files):
         print("Evaluating {}".format(mod.split("_")[0]))
         data_dict = scipy.io.loadmat(join(data_folder, mod))
-        data = data_dict[info[mod.split("_")[0]]]
-        for j, snr in enumerate(snr_list):
-            X_dataset = data[j, :, features_list].T  # Test over all available data
+        data = data_dict[mat_info[mod.split("_")[0]]]
+        for SNR in testing_SNR:
+            X_dataset = data[SNR, :, :]  # Test over all available data
             # Fit into data used for training, results are means and variances used to standardise the data
             X_dataset = scaler.transform(X_dataset)
-            right_label = [info_json['modulations']['labels'][mod.split("_")[0]] for _ in range(len(X_dataset))]
+            right_label = [signals_labels[i] for _ in range(len(X_dataset))]
             predict = np.argmax(evaluate_loaded_model.predict(X_dataset), axis=-1)
             accuracy = accuracy_score(right_label, predict)
-            result[i][j] = accuracy
+            result[i][SNR] = accuracy
 
     accuracy_graphic(result)
 
@@ -258,9 +260,9 @@ def accuracy_graphic(result):
     plt.title("Accuracy")
     plt.ylabel("Right prediction")
     plt.xlabel("SNR [dB]")
-    plt.xticks(np.arange(number_of_snr), [info_json['snr']['values'][i] for i in info_json['snr']['using']])
+    plt.xticks(np.arange(len(testing_SNR)), [SNR_values[i] for i in testing_SNR])
     for item in range(len(result)):
-        plt.plot(result[item], label=modulation_list[item])
+        plt.plot(result[item], label=signals[item])
     plt.legend(loc='best')
     plt.savefig(join(fig_folder, "accuracy-" + loaded_model_id + ".png"),
                 bbox_inches='tight', dpi=300)
@@ -287,9 +289,9 @@ def receive_data(port: serial.Serial()) -> (float, int):
             data.append(a)
 
     # print('Data length: {}'.format(len(data)))
-    if len(data) == number_of_features * 2:
-        num_array = np.zeros((number_of_features,), dtype=np.float32)
-        counter_array = np.zeros((number_of_features,), dtype=np.int32)
+    if len(data) == number_of_used_features * 2:
+        num_array = np.zeros((number_of_used_features,), dtype=np.float32)
+        counter_array = np.zeros((number_of_used_features,), dtype=np.int32)
     else:
         num_array = np.zeros((len(data) - 1,), dtype=np.float32)
         counter_array = np.zeros((1,), dtype=np.int32)
@@ -298,26 +300,26 @@ def receive_data(port: serial.Serial()) -> (float, int):
         new_data = b''.join(data)
         num_array = struct.unpack('<f', new_data[0:4])
         counter_array = struct.unpack('<i', new_data[4:8])
-    elif len(data) == number_of_features * 2:  # Features and counters
+    elif len(data) == number_of_used_features * 2:  # Features and counters
         print('Features')
         new_data = b''.join(data)
-        for x in range(0, number_of_features):
+        for x in range(0, number_of_used_features):
             aux = struct.unpack('<f', new_data[x * 4:x * 4 + 4])
             num_array[x] = aux[0]
-        for x in range(number_of_features, number_of_features * 2):
+        for x in range(number_of_used_features, number_of_used_features * 2):
             aux = struct.unpack('<i', new_data[x * 4:x * 4 + 4])
-            counter_array[x - number_of_features] = aux[0]
-    elif len(data) == frameSize + 1:  # Data
+            counter_array[x - number_of_used_features] = aux[0]
+    elif len(data) == frame_size + 1:  # Data
         print('Inst values')
         new_data = b''.join(data)
-        for x in range(0, frameSize):
+        for x in range(0, frame_size):
             aux = struct.unpack('<f', new_data[x * 4:x * 4 + 4])
             num_array[x] = aux[0]
-        counter_array = struct.unpack('<i', new_data[frameSize * 4:frameSize * 4 + 4])
-    elif len(data) > frameSize + 1:  # Echo
+        counter_array = struct.unpack('<i', new_data[frame_size * 4:frame_size * 4 + 4])
+    elif len(data) > frame_size + 1:  # Echo
         print('Echo')
         new_data = b''.join(data)
-        for x in range(0, frameSize * 8, 8):
+        for x in range(0, frame_size * 8, 8):
             r = struct.unpack('<f', new_data[x:x + 4])
             i = struct.unpack('<f', new_data[x + 4:x + 8])
             real[x // 8] = r[0]
@@ -367,10 +369,10 @@ def receive_scaler(port, size):
             data.append(a)
 
     new_data = b''.join(data)
-    for x in range(0, number_of_features):
+    for x in range(0, number_of_used_features):
         aux = struct.unpack('<f', new_data[x * 4:x * 4 + 4])
         np_array[x] = aux[0]
-    for x in range(number_of_features, number_of_features * 2):
+    for x in range(number_of_used_features, number_of_used_features * 2):
         aux = struct.unpack('<f', new_data[x * 4:x * 4 + 4])
         np_array[x] = aux[0]
 
@@ -381,8 +383,8 @@ def serial_communication():
     # Setup UART COM on Windows
     ser = serial.Serial(port='COM3', baudrate=115200, parity='N', bytesize=8, stopbits=1, timeout=1)
 
-    snr_range = np.linspace(5, 9, 5, dtype=np.int16)  # 12 14 16 18 20
-    frame_range = np.linspace(0, 9, 10, dtype=np.int16)
+    snr_range = np.linspace(0, 9, 10, dtype=np.int16)  # 2 4 6 8 10 12 14 16 18 20
+    frame_range = np.linspace(0, 500, 500, dtype=np.int16)
 
     # Write to UART
     print('Transmitting Neural Network...')
@@ -412,14 +414,14 @@ def serial_communication():
 
     print('Transmit scaler for Standardization')
     # Write to UART
-    for point in range(0, number_of_features):
+    for point in range(0, number_of_used_features):
         binary = struct.pack('<f', np.float32(scaler.mean_[point]))
         ser.write(binary)
-    for point in range(0, number_of_features):
+    for point in range(0, number_of_used_features):
         binary = struct.pack('<f', np.float32(scaler.scale_[point]))
         ser.write(binary)
 
-    received_scaler = receive_scaler(ser, number_of_features * 2)
+    received_scaler = receive_scaler(ser, number_of_used_features * 2)
     err_scaler = received_scaler - np.concatenate((np.float32(scaler.mean_), np.float32(scaler.scale_)))
     if np.max(err_scaler) == 0:
         print('Scaler loaded successfully')
@@ -430,9 +432,8 @@ def serial_communication():
     print('Wait...')
     time.sleep(3)
 
-    modulation = ['QPSK']
     print('Starting modulation signals transmission!')
-    for mod in modulation:
+    for mod in signals:
         # Create error information arrays and features results from microcontroller
         err_abs_vector = []
         err_phase_vector = []
@@ -442,14 +443,14 @@ def serial_communication():
         err_features = []
         predictions = []
         gathered_data = []
-        parsed_signal = data_mat[info[mod]]
+        parsed_signal = data_mat[mat_info[mod]]
         for snr in snr_range:
             for frame in frame_range:
                 print('Modulation = ' + mod)
                 print('SNR = {}'.format(snr))
                 print('Frame = {}'.format(frame))
-                i_values = functions.InstValues(parsed_signal[snr, frame, 0:frameSize])
-                ft = np.float32(features.calculate_features(parsed_signal[snr, frame, 0:frameSize]))
+                i_values = functions.InstValues(parsed_signal[snr, frame, 0:frame_size])
+                ft = np.float32(features.calculate_features(parsed_signal[snr, frame, 0:frame_size]))
                 ft_scaled = (ft - np.float32(scaler.mean_)) / np.float32(scaler.scale_)
                 q_format = quantization.find_best_q_format(np.min(ft_scaled), np.max(ft_scaled))
                 q_ft = quantization.quantize_data(ft_scaled, q_format)
@@ -463,7 +464,7 @@ def serial_communication():
                     ser.write(binary)
 
                 received_list = []
-                for results in range(0, 8):
+                for results in range(0, 3):
                     num_array, counter_array, real, imag = receive_data(ser)
                     if results == 0:
                         err = False
@@ -482,25 +483,43 @@ def serial_communication():
                     else:
                         received_list.append([num_array, counter_array])
 
-                err_abs_vector.append(i_values.inst_abs.T - received_list[1][0])
-                print('Err abs: {}'.format(np.max(err_abs_vector)))
-                err_phase_vector.append(i_values.inst_phase.T - received_list[2][0])
-                print('Err phase: {}'.format(np.max(err_phase_vector)))
-                err_unwrapped_phase_vector.append(i_values.inst_unwrapped_phase.T - received_list[3][0])
-                print('Err unwrapped phase: {}'.format(np.max(err_unwrapped_phase_vector)))
-                err_freq_vector.append(i_values.inst_freq[0:frameSize - 1].T - received_list[4][0][0:frameSize - 1])
-                print('Err freq: {}'.format(np.max(err_freq_vector)))
-                err_cn_abs_vector.append(i_values.inst_cna.T - received_list[5][0])
-                print('Err CN abs: {}'.format(np.max(err_cn_abs_vector)))
-                err_features.append(ft - received_list[6][0])
-                print('Err features: {}'.format(err_features))
+                # err_abs_vector.append(i_values.inst_abs.T - received_list[1][0])
+                # print('Err abs: {}'.format(np.max(err_abs_vector)))
+                # err_phase_vector.append(i_values.inst_phase.T - received_list[2][0])
+                # print('Err phase: {}'.format(np.max(err_phase_vector)))
+                # err_unwrapped_phase_vector.append(i_values.inst_unwrapped_phase.T - received_list[3][0])
+                # print('Err unwrapped phase: {}'.format(np.max(err_unwrapped_phase_vector)))
+                # err_freq_vector.append(i_values.inst_freq[0:frameSize - 1].T - received_list[4][0][0:frameSize - 1])
+                # print('Err freq: {}'.format(np.max(err_freq_vector)))
+                # err_cn_abs_vector.append(i_values.inst_cna.T - received_list[5][0])
+                # print('Err CN abs: {}'.format(np.max(err_cn_abs_vector)))
+                err_features.append(ft - received_list[1][0])
+                print('Err features: {}'.format(np.max(err_features)))
 
-                predictions.append(received_list[7][0])
-                print(predictions)
+                predictions.append(received_list[2][0])
+                correct = 0
+                for p in predictions:
+                    if mod == 'BPSK' and p == (0.0,):
+                        correct += 1
+                    elif mod == 'QPSK' and p == (1.0,):
+                        correct += 1
+                    elif mod == 'PSK8' and p == (2.0,):
+                        correct += 1
+                    elif mod == 'QAM16' and p == (3.0,):
+                        correct += 1
+                    elif mod == 'QAM64' and p == (4.0,):
+                        correct += 1
+                    elif mod == 'noise' and p == (5.0,):
+                        correct += 1
+                    else:
+                        correct += 0
+
+                print('Last prediction = {}'.format(received_list[2][0]))
+                print('Accuracy = {}'.format(correct * 100 / len(predictions)))
 
                 print('Wait...')
                 gathered_data.append(received_list)
-                time.sleep(3)
+                time.sleep(2.5)
 
         save_dict = {'Data': gathered_data, 'err_abs_vector': err_abs_vector, 'err_phase_vector': err_phase_vector,
                      'err_unwrapped_phase_vector': err_unwrapped_phase_vector, 'err_freq_vector': err_freq_vector,
@@ -510,17 +529,8 @@ def serial_communication():
 
 
 if __name__ == '__main__':
-    with open("./info.json") as handle:
-        info_json = json.load(handle)
-    frameSize = info_json['frameSize']
-
-    rna_folder = pathlib.Path(join(os.getcwd(), 'rna'))
-    fig_folder = pathlib.Path(join(os.getcwd(), "figures"))
-    arm_folder = pathlib.Path(join(os.getcwd(), 'arm-data'))
-    data_folder = pathlib.Path(join(os.getcwd(), "mat-data"))
-
     # Filename setup
-    mat_file_name = pathlib.Path(join(os.getcwd(), 'mat-data', 'all_modulations_data.mat'))
+    mat_file_name = pathlib.Path(join(os.getcwd(), 'mat-data', 'all_modulations_test.mat'))
 
     # Load MAT file and parse data
     data_mat = scipy.io.loadmat(mat_file_name)
@@ -546,13 +556,15 @@ if __name__ == '__main__':
 
         wandb.init(project="amcpy-team", config=HyperParameter(None).get_dict())
         config = wandb.config
-        train_rna(config)
-        loaded_model, loaded_model_id = get_model_from_id(' ')
+        model_id = train_rna(config)
+        loaded_model, loaded_model_id = get_model_from_id(model_id)
         evaluate_rna(loaded_model)
 
     if not training:
         loaded_model, _ = get_model_from_id(' ')
-        load_dict = quantization.quantize(loaded_model, np.concatenate((X_train, X_test)))
+        load_dict, info_dict = quantization.quantize(loaded_model, np.concatenate((X_train, X_test)))
+        for info in info_dict:
+            print(info + ' -> ' + info_dict[info])
         weights = load_dict['weights']
         biases = load_dict['biases']
         # serial_communication()

@@ -1,54 +1,27 @@
-import json
-import os
-import pathlib
-from os.path import join
-
-import numpy as np
 import scipy.io
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
-# Loads JSON file with execution setup
-with open("./info.json") as json_handle:
-    info_json = json.load(json_handle)
-
-# Config variables based on the JSON file
-number_of_frames = info_json['numberOfFrames']
-number_of_features = len(info_json['features']['using'])
-features_list = info_json['features']['using']
-number_of_snr = len(info_json['snr']['using'])
-snr_list = info_json['snr']['using']
-modulation_list = info_json['modulations']['names']
-# Dictionary to access variable inside MAT file
-info = {'BPSK': 'signal_bpsk',
-        'QPSK': 'signal_qpsk',
-        'PSK8': 'signal_8psk',
-        'QAM16': 'signal_qam16',
-        'QAM64': 'signal_qam64',
-        'noise': 'signal_noise'}
-
-# Load dataset from MATLAB
-features_files = [f + "_features.mat" for f in modulation_list]
+from globals import *
 
 
-def preprocess_data():  # Prepare the data for the magic
-    data_folder = pathlib.Path(join(os.getcwd(), "mat-data"))
-    number_of_samples = number_of_frames * number_of_snr
-    X = np.zeros((number_of_samples * len(modulation_list), number_of_features), dtype=np.float32)
-    y = np.ndarray((number_of_samples * len(modulation_list),), dtype=np.int8)
+def preprocess_data():
+    # Allocate memory for all signals
+    number_of_samples = number_of_training_frames * len(training_SNR)
+    X = np.zeros((number_of_samples * len(signals), len(used_features)), dtype=np.float32)
+    y = np.ndarray((number_of_samples * len(signals),), dtype=np.int8)
 
-    # Here each modulation file is loaded and all
-    # frames to all SNR values are vertically stacked
+    # Here each modulation file is loaded and all frames to all SNR values are vertically stacked
     for i, mod in enumerate(features_files):
         print("Processing {} data".format(mod.split("_")[0]))  # Separate the word 'features' from modulation file
-        data_dict = scipy.io.loadmat(join(data_folder, mod))
-        data = data_dict[info[mod.split("_")[0]]]
+        data_dict = scipy.io.loadmat(join(data_folder, mod + '_training'))
+        data = data_dict[mat_info[mod.split("_")[0]]]
         # Location of each modulation on input matrix based on their number of samples
         location = i * number_of_samples
 
-        for snr in snr_list:
-            for frame in range(number_of_frames):
-                X[location, :] = np.float32(data[snr - (21 - number_of_snr)][frame][features_list])  # [SNR][frames][ft]
+        for SNR in enumerate(training_SNR):
+            for frame in range(number_of_training_frames):
+                X[location, :] = np.float32(data[SNR[0]][frame][:])  # [SNR][frames][ft]
                 location += 1
 
             # An array containing the encoded labels for each modulation
