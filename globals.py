@@ -50,69 +50,62 @@ training_SNR = np.int8(np.linspace(11, 15, 5))
 testing_SNR = np.int8(np.linspace(0, 15, 16))
 frame_size = 2048
 number_of_testing_frames = 500
-number_of_training_frames = 5000
+number_of_training_frames = 500
 
 # Load dataset from MATLAB
-features_files = [f + "_features" for f in signals]
-testing_features_files = [f + "_features_testing" for f in signals]
+features_files = [f + "_best_features" for f in signals]
+testing_features_files = [f + "_best_features" for f in signals]
 
 features_names = {
-    0: "Std of the Instantaneous Phase",
+    0: "Gmax",
     1: "Std of the Absolute Instantaneous Phase",
-    2: "Std of the Instantaneous Frequency",
-    3: "Std of the Absolute Instantaneous Frequency",
-    4: "Std of the CN Instantaneous Amplitude",
-    5: "Std of the Absolute CN Instantaneous Amplitude",
-    6: "Mean Value of the Signal Magnitude",
-    7: "Squared Mean of the Signal Magnitude",
-    8: "Normalized Sqrt Value of Sum of Amplitude",
-    9: "Ratio of I/Q Components",
-    10: "Gmax",
-    11: "Kurtosis of the Absolute Value",
-    12: "Kurtosis of the Absolute Frequency",
-    13: "Cumulant Order 20",
-    14: "Cumulant Order 21",
-    15: "Cumulant Order 40",
-    16: "Cumulant Order 41",
-    17: "Cumulant Order 42",
-    18: "Cumulant Order 60",
-    19: "Cumulant Order 61",
-    20: "Cumulant Order 62",
-    21: "Cumulant Order 63"
+    2: "Std of the Direct Instantaneous Phase",
+    3: "Std of the CN Instantaneous Amplitude",
+    4: "Std of the CN Instantaneous Frequency",
+    5: "Mean Value of the Signal Magnitude",
+    6: "Normalized square root value of sum of amplitude of signal samples",
+    7: "Kurtosis of the CN Amplitude",
+    8: "Kurtosis of the CN Frequency",
+    9: "Cumulant Order 20",
+    10: "Cumulant Order 21",
+    11: "Cumulant Order 40",
+    12: "Cumulant Order 41",
+    13: "Cumulant Order 42",
+    14: "Cumulant Order 60",
+    15: "Cumulant Order 61",
+    16: "Cumulant Order 62",
+    17: "Cumulant Order 63"
 }
 
 used_features = [
-    3,
+    2,
+    4,
     5,
     6,
-    11,
-    15,
-    17
+    8,
+    12,
+    14,
 ]
 
 features_functions = {
-    0: "functions.std_dev_inst_phase(signal_input)",
+    0: "functions.gmax(signal_input)",
     1: "functions.std_dev_abs_inst_phase(signal_input)",
-    2: "functions.std_dev_inst_freq(signal_input)",
-    3: "functions.std_dev_abs_inst_freq(signal_input)",
-    4: "functions.std_dev_inst_cna(signal_input)",
-    5: "functions.std_dev_abs_inst_cna(signal_input)",
-    6: "functions.mean_of_signal_magnitude(signal_input)",
-    7: "functions.squared_mean_of_signal_magnitude(signal_input)",
-    8: "functions.normalized_sqrt_of_sum_of_amp(signal_input)",
-    9: "functions.ratio_iq(signal_input)",
-    10: "functions.gmax(signal_input)",
-    11: "functions.kurtosis_of_abs_amplitude(signal_input)",
-    12: "functions.kurtosis_of_abs_freq(signal_input)",
-    13: "functions.cumulant_20(signal_input)",
-    14: "functions.cumulant_21(signal_input)",
-    15: "functions.cumulant_40(signal_input)",
-    16: "functions.cumulant_41(signal_input)",
-    17: "functions.cumulant_42(signal_input)",
-    18: "functions.cumulant_60(signal_input)",
-    19: "functions.cumulant_61(signal_input)",
-    20: "functions.cumulant_62(signal_input)",
-    21: "functions.cumulant_63(signal_input)"
+    2: "functions.std_dev_inst_phase(signal_input)",
+    3: "functions.std_dev_abs_inst_cna(signal_input)",
+    4: "functions.std_dev_abs_inst_cnf(signal_input)",
+    5: "functions.mean_of_signal_magnitude(signal_input)",
+    6: "functions.normalized_sqrt_of_sum_of_amp(signal_input)",
+    7: "functions.kurtosis_of_cn_amplitude(signal_input)",
+    8: "functions.kurtosis_of_cn_freq(signal_input)",
+    9: "functions.cumulant_20(signal_input)",
+    10: "functions.cumulant_21(signal_input)",
+    11: "functions.cumulant_40(signal_input)",
+    12: "functions.cumulant_41(signal_input)",
+    13: "functions.cumulant_42(signal_input)",
+    14: "functions.cumulant_60(signal_input)",
+    15: "functions.cumulant_61(signal_input)",
+    16: "functions.cumulant_62(signal_input)",
+    17: "functions.cumulant_63(signal_input)"
 }
 
 number_of_used_features = len(used_features)

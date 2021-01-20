@@ -12,6 +12,7 @@
       <w>linspace</w>
       <w>qpsk</w>
       <w>relu</w>
+      <w>scaler</w>
       <w>softmax</w>
       <w>wandb</w>
     </words>

@@ -1,3 +1,4 @@
+import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import plotly.express as px
 import plotly.graph_objects as go
@@ -10,7 +11,7 @@ from globals import *
 def load_files():
     data = []
     for mod in signals:
-        file_name = pathlib.Path(join(os.getcwd(), 'mat-data', mod + '_features_full_range.mat'))
+        file_name = pathlib.Path(join(os.getcwd(), 'mat-data', mod + '_features_ltd_rnd_phases.mat'))
         file = scipy.io.loadmat(file_name)
         data.append(file[mat_info[mod]])
     return data
@@ -88,33 +89,32 @@ def simple_plot(snr_axis, data_axis, plot_type='html', save=True):
         if save:
             figure_name = pathlib.Path(join(os.getcwd(),
                                             'figures',
-                                            'features', '6ft_plots.html'))
+                                            'features', 'plots.html'))
             fig.write_html(figure_name.__str__())
             del fig
     elif plot_type == 'png':
         # Plot graphics using only mean (matplotlib.plot)
         for n in range(number_of_used_features):
             plt.figure(num=n, figsize=(6.4, 3.6), dpi=300)
-            plt.plot(snr_axis[0, :], data_axis[0, :, 0, n], '#03cffc', linewidth=1.0, antialiased=True)  # BPSK
-            plt.plot(snr_axis[1, :], data_axis[1, :, 0, n], '#6203fc', linewidth=1.0, antialiased=True)  # QPSK
-            plt.plot(snr_axis[2, :], data_axis[2, :, 0, n], '#be03fc', linewidth=1.0, antialiased=True)  # PSK8
-            plt.plot(snr_axis[3, :], data_axis[3, :, 0, n], '#fc0320', linewidth=1.0, antialiased=True)  # QAM16
-            plt.plot(snr_axis[4, :], data_axis[4, :, 0, n], 'g', linewidth=1.0, antialiased=True)  # QAM64
+            plt.plot(snr_axis[0, :], data_axis[0, :, 0, n], '#2F8000', linewidth=1.0, antialiased=True)  # BPSK
+            plt.plot(snr_axis[1, :], data_axis[1, :, 0, n], '#DEAA0B', linewidth=1.0, antialiased=True)  # QPSK
+            plt.plot(snr_axis[2, :], data_axis[2, :, 0, n], '#FF3300', linewidth=1.0, antialiased=True)  # PSK8
+            plt.plot(snr_axis[3, :], data_axis[3, :, 0, n], '#AD00E6', linewidth=1.0, antialiased=True)  # QAM16
+            plt.plot(snr_axis[4, :], data_axis[4, :, 0, n], '#0066FF', linewidth=1.0, antialiased=True)  # QAM64
             plt.plot(snr_axis[5, :], data_axis[5, :, 0, n], 'k', linewidth=1.0, antialiased=True)  # Noise
-            plt.title('Feature ' + str(n + 1) + ' - ' + features_names[n])
+            # plt.title('Feature ' + str(n + 1) + ' - ' + features_names[n])
             plt.xlabel('SNR')
-            plt.ylabel('Value')
+            plt.ylabel('Feature Magnitude')
             plt.legend(signals)
             figure_name = pathlib.Path(join(os.getcwd(),
                                             'figures',
                                             'features',
                                             'ft_{}_SNR_({})_a_({})_mean.png'.format(str(n + 1),
-                                                                                    (testing_SNR[0] - 10) * 2,
-                                                                                    (testing_SNR[-1] - 10) * 2)))
+                                                                                    (testing_SNR[0] - 5) * 2,
+                                                                                    (testing_SNR[-1] - 5) * 2)))
             if save:
                 plt.savefig(figure_name, dpi=300, facecolor='w', edgecolor='w',
-                            orientation='landscape', format='png',
-                            transparent=False, bbox_inches=None, pad_inches=0.1)
+                            orientation='landscape', format='png', bbox_inches='tight')
                 plt.close()
             else:
                 plt.show()
@@ -125,33 +125,37 @@ def n_frames_plot(n_frames, snr_axis, data_axis, save=False):
     # TODO: HTML plot for all frames
     for n in range(number_of_used_features):
         plt.figure(num=n, figsize=(6.4, 3.6), dpi=300)
-        plt.plot(snr_axis[0, :], data_axis[0, :, 0:n_frames, n], '#03cffc', linewidth=1.0, antialiased=True)  # BPSK
-        plt.plot(snr_axis[1, :], data_axis[1, :, 0:n_frames, n], '#6203fc', linewidth=1.0, antialiased=True)  # QPSK
-        plt.plot(snr_axis[2, :], data_axis[2, :, 0:n_frames, n], '#be03fc', linewidth=1.0, antialiased=True)  # PSK8
-        plt.plot(snr_axis[3, :], data_axis[3, :, 0:n_frames, n], '#fc0320', linewidth=1.0, antialiased=True)  # QAM16
-        plt.plot(snr_axis[4, :], data_axis[4, :, 0:n_frames, n], 'g', linewidth=1.0, antialiased=True)  # QAM64
+        plt.plot(snr_axis[0, :], data_axis[0, :, 0:n_frames, n], '#2F8000', linewidth=1.0, antialiased=True)  # BPSK
+        plt.plot(snr_axis[1, :], data_axis[1, :, 0:n_frames, n], '#DEAA0B', linewidth=1.0, antialiased=True)  # QPSK
+        plt.plot(snr_axis[2, :], data_axis[2, :, 0:n_frames, n], '#FF3300', linewidth=1.0, antialiased=True)  # PSK8
+        plt.plot(snr_axis[3, :], data_axis[3, :, 0:n_frames, n], '#AD00E6', linewidth=1.0, antialiased=True)  # QAM16
+        plt.plot(snr_axis[4, :], data_axis[4, :, 0:n_frames, n], '#0066FF', linewidth=1.0, antialiased=True)  # QAM64
         plt.plot(snr_axis[5, :], data_axis[5, :, 0:n_frames, n], 'k', linewidth=1.0, antialiased=True)  # Noise
         plt.xlabel('SNR')
-        plt.ylabel('Value')
-        plt.title('Feature ' + str(n + 1) + ' - ' + features_names[n])
-        # TODO: put modulation names in legend
-        # plt.legend(modulation_names)
+        plt.ylabel('Feature Magnitude')
+        BPSK_patch = mpatches.Patch(color='#2F8000', label='BPSK')
+        QPSK_patch = mpatches.Patch(color='#DEAA0B', label='QPSK')
+        PSK8_patch = mpatches.Patch(color='#FF3300', label='PSK8')
+        QAM16_patch = mpatches.Patch(color='#AD00E6', label='QAM16')
+        QAM64_patch = mpatches.Patch(color='#0066FF', label='QAM64')
+        noise_patch = mpatches.Patch(color='k', label='noise')
+        plt.legend(handles=[BPSK_patch, QPSK_patch, PSK8_patch, QAM16_patch, QAM64_patch, noise_patch])
+        # plt.title('Feature ' + str(n + 1) + ' - ' + features_names[n])
 
         figure_name = pathlib.Path(join(os.getcwd(),
                                         'figures',
                                         'features',
                                         'ft_{}_SNR_({})_a_({})_{}_frames.png'.format(str(n + 1),
-                                                                                     (testing_SNR[0] - 10) * 2,
-                                                                                     (testing_SNR[-1] - 10) * 2,
+                                                                                     (testing_SNR[0] - 5) * 2,
+                                                                                     (testing_SNR[-1] - 5) * 2,
                                                                                      n_frames)))
         if save:
             plt.savefig(figure_name, dpi=300, facecolor='w', edgecolor='w',
-                        orientation='landscape', format='png',
-                        transparent=False, bbox_inches=None, pad_inches=0.1)
+                        orientation='landscape', format='png', bbox_inches='tight')
             plt.close()
         else:
             plt.show()
-        print('Plotting 500 frames of feature number {}'.format(n))
+        print('Plotting n frames of feature number {}'.format(n))
 
 
 def errorbar_plot(snr_axis, mean, stddev, save=False):
@@ -161,36 +165,35 @@ def errorbar_plot(snr_axis, mean, stddev, save=False):
         plt.figure(num=n, figsize=(6.4, 3.6), dpi=300)
         plt.errorbar(snr_axis[0, :],
                      mean[0, :, 0, n],
-                     yerr=stddev[0, :, 0, n], color='#03cffc')
+                     yerr=stddev[0, :, 0, n], color='#2F8000', linewidth=1.0)
         plt.errorbar(snr_axis[1, :],
                      mean[1, :, 0, n],
-                     yerr=stddev[1, :, 0, n], color='#6203fc')
+                     yerr=stddev[1, :, 0, n], color='#DEAA0B', linewidth=1.0)
         plt.errorbar(snr_axis[2, :],
                      mean[2, :, 0, n],
-                     yerr=stddev[2, :, 0, n], color='#be03fc')
+                     yerr=stddev[2, :, 0, n], color='#FF3300', linewidth=1.0)
         plt.errorbar(snr_axis[3, :],
                      mean[3, :, 0, n],
-                     yerr=stddev[3, :, 0, n], color='#fc0320')
+                     yerr=stddev[3, :, 0, n], color='#AD00E6', linewidth=1.0)
         plt.errorbar(snr_axis[4, :],
                      mean[4, :, 0, n],
-                     yerr=stddev[4, :, 0, n], color='g')
+                     yerr=stddev[4, :, 0, n], color='#0066FF', linewidth=1.0)
         plt.errorbar(snr_axis[5, :],
                      mean[5, :, 0, n],
-                     yerr=stddev[5, :, 0, n], color='k')
+                     yerr=stddev[5, :, 0, n], color='k', linewidth=1.0)
         plt.xlabel('SNR')
-        plt.ylabel('Value with sigma')
-        plt.title('Feature ' + str(n + 1) + ' - ' + features_names[n])
+        plt.ylabel('Feature Magnitude')
+        # plt.title('Feature ' + str(n + 1) + ' - ' + features_names[n])
         plt.legend(signals)
         figure_name = pathlib.Path(join(os.getcwd(),
                                         'figures',
                                         'features',
                                         'ft_{}_SNR_({})_a_({})_err.png'.format(str(n + 1),
-                                                                               (testing_SNR[0] - 10) * 2,
-                                                                               (testing_SNR[-1] - 10) * 2)))
+                                                                               (testing_SNR[0] - 5) * 2,
+                                                                               (testing_SNR[-1] - 5) * 2)))
         if save:
             plt.savefig(figure_name, dpi=300, facecolor='w', edgecolor='w',
-                        orientation='landscape', format='png',
-                        transparent=False, bbox_inches=None, pad_inches=0.1)
+                        orientation='landscape', format='png', bbox_inches='tight')
             plt.close()
         else:
             plt.show()
@@ -205,6 +208,6 @@ if __name__ == '__main__':
     mean_array = calculate_features_mean(files)
     std_array = calculate_features_stddev(files)
     # Plot
-    simple_plot(snr_array, mean_array)
-    # n_frames_plot(100, snr_array, np.array(files))
-    # errorbar_plot(snr_array, mean_array, std_array)
+    simple_plot(snr_array, mean_array, plot_type='png', save=True)
+    n_frames_plot(100, snr_array, np.array(files), save=True)
+    # errorbar_plot(snr_array, mean_array, std_array, save=True)

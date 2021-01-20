@@ -32,7 +32,7 @@ def modulation_process(modulation):
     print('Starting new process...')
 
     # Filename setup
-    mat_file_name = pathlib.Path(join(os.getcwd(), 'mat-data', 'all_modulations_test.mat'))
+    mat_file_name = pathlib.Path(join(os.getcwd(), 'mat-data', 'all_modulations.mat'))
 
     # Load MAT file
     data_mat = scipy.io.loadmat(mat_file_name)
@@ -58,7 +58,7 @@ def modulation_process(modulation):
 
     # Save the samples in a mat file
     save_dict = {'Modulation': modulation, mat_info[modulation]: features}
-    scipy.io.savemat(pathlib.Path(join(os.getcwd(), 'mat-data', modulation + '_features_full_range.mat')), save_dict)
+    scipy.io.savemat(pathlib.Path(join(os.getcwd(), 'mat-data', modulation + '_best_features.mat')), save_dict)
 
     print('File saved...')
     print('Process time in seconds: {0}'.format(time.process_time()))  # Horses benchmark!
