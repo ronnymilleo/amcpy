@@ -14,14 +14,14 @@ def preprocess_data():
     # Here each modulation file is loaded and all frames to all SNR values are vertically stacked
     for i, mod in enumerate(features_files):
         print("Processing {} data".format(mod.split("_")[0]))  # Separate the word 'features' from modulation file
-        data_dict = scipy.io.loadmat(join(data_folder, mod + '_training'))
+        data_dict = scipy.io.loadmat(join(data_folder, mod))
         data = data_dict[mat_info[mod.split("_")[0]]]
         # Location of each modulation on input matrix based on their number of samples
         location = i * number_of_samples
 
-        for SNR in enumerate(training_SNR):
+        for SNR in training_SNR:
             for frame in range(number_of_training_frames):
-                X[location, :] = np.float32(data[SNR[0]][frame][:])  # [SNR][frames][ft]
+                X[location, :] = np.float32(data[SNR][frame][:])  # [SNR][frames][ft]
                 location += 1
 
             # An array containing the encoded labels for each modulation

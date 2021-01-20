@@ -30,88 +30,63 @@ class MomentValues:
         self.m63 = np.mean(np.power(signal_input, 6 - 3) * np.power(np.conj(signal_input), 3))
 
 
-# Std of the Instantaneous Phase
-def std_dev_inst_phase(signal_input):
-    i = InstValues(signal_input)
-    ft_output = np.std(i.inst_phase)
+# 1 - Gmax
+def gmax(signal_input):
+    ft_output = np.max(np.power(np.abs(np.fft.fft(signal_input)), 2) / len(signal_input))
     return ft_output
 
 
-# Std of the Absolute Instantaneous Phase
+# 2 - Std of the Absolute Instantaneous Phase
 def std_dev_abs_inst_phase(signal_input):
     i = InstValues(signal_input)
     ft_output = np.std(np.abs(i.inst_phase))
     return ft_output
 
 
-# Std of the Instantaneous Frequency
-def std_dev_inst_freq(signal_input):
+# 3 - Std of the Direct Instantaneous Phase
+def std_dev_inst_phase(signal_input):
     i = InstValues(signal_input)
-    ft_output = np.std(i.inst_freq)
+    ft_output = np.std(i.inst_phase)
     return ft_output
 
 
-# Std of the Absolute Instantaneous Frequency
-def std_dev_abs_inst_freq(signal_input):
-    i = InstValues(signal_input)
-    ft_output = np.std(np.abs(i.inst_freq))
-    return ft_output
-
-
-# Std of the Absolute CN Instantaneous Amplitude
-def std_dev_inst_cna(signal_input):
-    i = InstValues(signal_input)
-    ft_output = np.std(i.inst_cna)
-    return ft_output
-
-
-# Std of the CN Instantaneous Amplitude
+# 4 - Std of the CN Instantaneous Amplitude
 def std_dev_abs_inst_cna(signal_input):
     i = InstValues(signal_input)
     ft_output = np.std(np.abs(i.inst_cna))
     return ft_output
 
 
-# Mean Value of the Signal Magnitude
+# 5 - Std of the Instantaneous Frequency
+def std_dev_abs_inst_cnf(signal_input):
+    i = InstValues(signal_input)
+    ft_output = np.std(i.inst_freq)
+    return ft_output
+
+
+# 6 - Mean Value of the Signal Magnitude
 def mean_of_signal_magnitude(signal_input):
     ft_output = np.mean(np.abs(signal_input))
     return ft_output
 
 
-# Squared Mean of the Signal Magnitude
-def squared_mean_of_signal_magnitude(signal_input):
-    i = InstValues(signal_input)
-    ft_output = np.power(np.mean(i.inst_abs), 2)
-    return ft_output
-
-
-# Normalized Sqrt Value of Sum of Amplitude
+# 7 - Normalized square root value of sum of amplitude of signal samples
 def normalized_sqrt_of_sum_of_amp(signal_input):
     ft_output = np.sqrt(np.sum(np.abs(signal_input))) / len(signal_input)
     return ft_output
 
 
-# Ratio of I/Q Components
-def ratio_iq(signal_input):
-    ft_output = np.sum(np.power(np.imag(signal_input), 2)) / np.sum(np.power(np.real(signal_input), 2))
+# 8 - Kurtosis of the CN Amplitude
+def kurtosis_of_cn_amplitude(signal_input):
+    i = InstValues(signal_input)
+    ft_output = stats.kurtosis(i.inst_cna)
     return ft_output
 
 
-# Gmax
-def gmax(signal_input):
-    ft_output = np.max(np.power(np.abs(np.fft.fft(signal_input)), 2) / len(signal_input))
-    return ft_output
-
-
-# Kurtosis of the Absolute Amplitude
-def kurtosis_of_abs_amplitude(signal_input):
-    ft_output = stats.kurtosis(np.abs(signal_input))
-    return ft_output
-
-
-# Kurtosis of the Absolute Frequency
-def kurtosis_of_abs_freq(signal_input):
-    ft_output = stats.kurtosis(np.abs(1 / (2 * np.pi) * np.diff(np.unwrap(np.angle(signal_input)))))
+# 9 - Kurtosis of the CN Frequency
+def kurtosis_of_cn_freq(signal_input):
+    i = InstValues(signal_input)
+    ft_output = stats.kurtosis(i.inst_freq)
     return ft_output
 
 

@@ -21,7 +21,6 @@ from wandb.keras import WandbCallback
 import features
 import functions
 import quantization
-from globals import *
 from preprocessing import *
 
 gpus = tf.config.list_physical_devices('GPU')
@@ -42,14 +41,14 @@ class HyperParameter:
         if arguments is None:
             self.default = True
             self.activation = 'relu'
-            self.batch_size = 128
-            self.dropout = 0.40
-            self.epochs = 50
+            self.batch_size = 32
+            self.dropout = 0.4
+            self.epochs = 10
             self.initializer = 'he_normal'
-            self.layer_size_hl1 = 48
-            self.layer_size_hl2 = 24
-            self.layer_size_hl3 = 12
-            self.learning_rate = 1e-3
+            self.layer_size_hl1 = 7 * 4
+            self.layer_size_hl2 = 7 * 3
+            self.layer_size_hl3 = 7 * 2
+            self.learning_rate = 2e-3
             self.optimizer = 'rmsprop'
         else:
             self.default = False
@@ -118,8 +117,8 @@ def create_model(cfg: HyperParameter) -> Sequential:  # Return sequential model
     return model
 
 
-def get_model_from_id(model_id: str):
-    if model_id == ' ':  # If you do not specify a RNA id, it'll use the newest available in rna_folder
+def get_model_from_id(model_id_str: str):
+    if model_id_str == ' ':  # If you do not specify a RNA id, it'll use the newest available in rna_folder
         aux = [f for f in os.listdir(rna_folder) if "rna" in f]
         rna_files = [join(str(rna_folder), item) for item in aux]
         input_id = max(rna_files, key=os.path.getctime)
@@ -129,10 +128,10 @@ def get_model_from_id(model_id: str):
         rna = join(str(rna_folder), "rna-" + input_id + ".h5")
         model = load_model(rna)  # Loads the RNA model
     else:
-        rna = join(str(rna_folder), "rna-" + model_id + ".h5")
+        rna = join(str(rna_folder), "rna-" + model_id_str + ".h5")
         model = load_model(rna)
-        print("\nUsing RNA with id {}.".format(model_id))
-    return model, model_id
+        print("\nUsing RNA with id {}.".format(model_id_str))
+    return model, model_id_str
 
 
 def train_rna(cfg):
@@ -266,9 +265,6 @@ def accuracy_graphic(result):
     plt.legend(loc='best')
     plt.savefig(join(fig_folder, "accuracy-" + loaded_model_id + ".png"),
                 bbox_inches='tight', dpi=300)
-    plt.show()
-    # figure.clf()
-    # plt.close(figure)
 
 
 def receive_data(port: serial.Serial()) -> (float, int):
@@ -464,7 +460,7 @@ def serial_communication():
                     ser.write(binary)
 
                 received_list = []
-                for results in range(0, 3):
+                for results in range(0, 8):
                     num_array, counter_array, real, imag = receive_data(ser)
                     if results == 0:
                         err = False
@@ -483,20 +479,20 @@ def serial_communication():
                     else:
                         received_list.append([num_array, counter_array])
 
-                # err_abs_vector.append(i_values.inst_abs.T - received_list[1][0])
-                # print('Err abs: {}'.format(np.max(err_abs_vector)))
-                # err_phase_vector.append(i_values.inst_phase.T - received_list[2][0])
-                # print('Err phase: {}'.format(np.max(err_phase_vector)))
-                # err_unwrapped_phase_vector.append(i_values.inst_unwrapped_phase.T - received_list[3][0])
-                # print('Err unwrapped phase: {}'.format(np.max(err_unwrapped_phase_vector)))
-                # err_freq_vector.append(i_values.inst_freq[0:frameSize - 1].T - received_list[4][0][0:frameSize - 1])
-                # print('Err freq: {}'.format(np.max(err_freq_vector)))
-                # err_cn_abs_vector.append(i_values.inst_cna.T - received_list[5][0])
-                # print('Err CN abs: {}'.format(np.max(err_cn_abs_vector)))
-                err_features.append(ft - received_list[1][0])
+                err_abs_vector.append(i_values.inst_abs.T - received_list[1][0])
+                print('Err abs: {}'.format(np.max(err_abs_vector)))
+                err_phase_vector.append(i_values.inst_phase.T - received_list[2][0])
+                print('Err phase: {}'.format(np.max(err_phase_vector)))
+                err_unwrapped_phase_vector.append(i_values.inst_unwrapped_phase.T - received_list[3][0])
+                print('Err unwrapped phase: {}'.format(np.max(err_unwrapped_phase_vector)))
+                err_freq_vector.append(i_values.inst_freq[0:frame_size - 1].T - received_list[4][0][0:frame_size - 1])
+                print('Err freq: {}'.format(np.max(err_freq_vector)))
+                err_cn_abs_vector.append(i_values.inst_cna.T - received_list[5][0])
+                print('Err CN abs: {}'.format(np.max(err_cn_abs_vector)))
+                err_features.append(ft - received_list[6][0])
                 print('Err features: {}'.format(np.max(err_features)))
 
-                predictions.append(received_list[2][0])
+                predictions.append(received_list[7][0])
                 correct = 0
                 for p in predictions:
                     if mod == 'BPSK' and p == (0.0,):
@@ -530,13 +526,13 @@ def serial_communication():
 
 if __name__ == '__main__':
     # Filename setup
-    mat_file_name = pathlib.Path(join(os.getcwd(), 'mat-data', 'all_modulations_test.mat'))
+    mat_file_name = pathlib.Path(join(os.getcwd(), 'mat-data', 'all_modulations.mat'))
 
     # Load MAT file and parse data
     data_mat = scipy.io.loadmat(mat_file_name)
     print(str(mat_file_name) + ' file loaded...')
 
-    training = False
+    training = True
 
     X_train, X_test, y_train, y_test, scaler = preprocess_data()
 
@@ -554,17 +550,18 @@ if __name__ == '__main__':
         parser.add_argument('--optimizer', action='store', dest='optimizer')
         args = parser.parse_args()
 
-        wandb.init(project="amcpy-team", config=HyperParameter(None).get_dict())
+        wandb.init(project="amcpy-team", config=HyperParameter(args).get_dict())
         config = wandb.config
         model_id = train_rna(config)
         loaded_model, loaded_model_id = get_model_from_id(model_id)
         evaluate_rna(loaded_model)
 
     if not training:
-        loaded_model, _ = get_model_from_id(' ')
+        loaded_model, loaded_model_id = get_model_from_id('c67a57d3')
+        evaluate_rna(loaded_model)
         load_dict, info_dict = quantization.quantize(loaded_model, np.concatenate((X_train, X_test)))
         for info in info_dict:
             print(info + ' -> ' + info_dict[info])
         weights = load_dict['weights']
         biases = load_dict['biases']
-        # serial_communication()
+        serial_communication()
