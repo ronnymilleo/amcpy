@@ -532,7 +532,7 @@ if __name__ == '__main__':
     data_mat = scipy.io.loadmat(mat_file_name)
     print(str(mat_file_name) + ' file loaded...')
 
-    training = True
+    training = False
 
     X_train, X_test, y_train, y_test, scaler = preprocess_data()
 
@@ -557,11 +557,11 @@ if __name__ == '__main__':
         evaluate_rna(loaded_model)
 
     if not training:
-        loaded_model, loaded_model_id = get_model_from_id('c67a57d3')
+        loaded_model, loaded_model_id = get_model_from_id('8202de58')
         evaluate_rna(loaded_model)
         load_dict, info_dict = quantization.quantize(loaded_model, np.concatenate((X_train, X_test)))
         for info in info_dict:
             print(info + ' -> ' + info_dict[info])
         weights = load_dict['weights']
         biases = load_dict['biases']
-        serial_communication()
+        # serial_communication()

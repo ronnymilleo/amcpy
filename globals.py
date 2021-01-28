@@ -3,6 +3,7 @@ import pathlib
 from os.path import join
 
 import numpy as np
+import functions
 
 data_folder = pathlib.Path(join(os.getcwd(), "mat-data"))
 arm_folder = pathlib.Path(join(os.getcwd(), "arm-data"))
@@ -46,11 +47,11 @@ SNR_values = {0: '-10',
               14: '18',
               15: '20'}
 
-training_SNR = np.int8(np.linspace(11, 15, 5))
+training_SNR = np.int8(np.linspace(10, 15, 6))
 testing_SNR = np.int8(np.linspace(0, 15, 16))
 frame_size = 2048
-number_of_testing_frames = 500
-number_of_training_frames = 500
+number_of_testing_frames = 1000
+number_of_training_frames = 1000
 
 # Load dataset from MATLAB
 features_files = [f + "_best_features" for f in signals]
@@ -85,6 +86,27 @@ used_features = [
     8,
     12,
     14,
+]
+
+not_used_features = [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17
 ]
 
 features_functions = {

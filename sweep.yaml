@@ -1,14 +1,12 @@
 method: bayes
 metric:
-  goal: minimize
-  name: val_loss
+  goal: maximize
+  name: accuracy
 parameters:
   activation:
     distribution: categorical
     values:
       - relu
-      - sigmoid
-      - tanh
   batch_size:
     values:
       - 32
@@ -26,7 +24,7 @@ parameters:
       - 0.5
   epochs:
     distribution: int_uniform
-    max: 20
+    max: 30
     min: 5
   layer_size_hl1:
     distribution: int_uniform
@@ -34,11 +32,11 @@ parameters:
     min: 7
   layer_size_hl2:
     distribution: int_uniform
-    max: 21
+    max: 28
     min: 7
   layer_size_hl3:
     distribution: int_uniform
-    max: 14
+    max: 28
     min: 7
   learning_rate:
     distribution: uniform

@@ -141,15 +141,15 @@ def quantize(model: tf.keras.Model, inputs):
 
     # TODO: better flattening of matrices
     # Convert quantized weights into numpy arrays
-    l1 = np.reshape(quantized[0][0][0].numpy().T, (6 * 6,))
+    l1 = np.reshape(quantized[0][0][0].numpy().T, (7 * 7,))
     b1 = quantized[0][1][0].numpy()
-    l2 = np.reshape(quantized[1][0][0].numpy().T, (6 * 36,))
+    l2 = np.reshape(quantized[1][0][0].numpy().T, (7 * 21,))
     b2 = quantized[1][1][0].numpy()
-    l3 = np.reshape(quantized[2][0][0].numpy().T, (36 * 24,))
+    l3 = np.reshape(quantized[2][0][0].numpy().T, (21 * 27,))
     b3 = quantized[2][1][0].numpy()
-    l4 = np.reshape(quantized[3][0][0].numpy().T, (24 * 12,))
+    l4 = np.reshape(quantized[3][0][0].numpy().T, (27 * 13,))
     b4 = quantized[3][1][0].numpy()
-    l5 = np.reshape(quantized[4][0][0].numpy().T, (12 * 6,))
+    l5 = np.reshape(quantized[4][0][0].numpy().T, (13 * 6,))
     b5 = quantized[4][1][0].numpy()
 
     weights = np.concatenate((l1, l2, l3, l4, l5))
