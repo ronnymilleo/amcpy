@@ -4,14 +4,19 @@ import plotly.express as px
 import plotly.graph_objects as go
 import scipy.io
 from plotly.subplots import make_subplots
+from numpy import arange
 
 from globals import *
+
+plt.rcParams.update({
+    "text.usetex": True,
+    "font.sans-serif": ["Helvetica"]})
 
 
 def load_files():
     data = []
     for mod in signals:
-        file_name = pathlib.Path(join(os.getcwd(), 'mat-data', mod + '_features_ltd_rnd_phases.mat'))
+        file_name = pathlib.Path(join(os.getcwd(), 'mat-data', mod + '_features.mat'))
         file = scipy.io.loadmat(file_name)
         data.append(file[mat_info[mod]])
     return data
@@ -103,8 +108,9 @@ def simple_plot(snr_axis, data_axis, plot_type='html', save=True):
             plt.plot(snr_axis[4, :], data_axis[4, :, 0, n], '#0066FF', linewidth=1.0, antialiased=True)  # QAM64
             plt.plot(snr_axis[5, :], data_axis[5, :, 0, n], 'k', linewidth=1.0, antialiased=True)  # Noise
             # plt.title('Feature ' + str(n + 1) + ' - ' + features_names[n])
-            plt.xlabel('SNR')
-            plt.ylabel('Feature Magnitude')
+            plt.xlabel('SNR [dB]')
+            plt.xticks(snr_axis[0, :], SNR_values.values())
+            plt.ylabel(features_names[n+1], rotation=0, fontsize=15, labelpad=20)
             plt.legend(signals)
             figure_name = pathlib.Path(join(os.getcwd(),
                                             'figures',
@@ -131,8 +137,9 @@ def n_frames_plot(n_frames, snr_axis, data_axis, save=False):
         plt.plot(snr_axis[3, :], data_axis[3, :, 0:n_frames, n], '#AD00E6', linewidth=1.0, antialiased=True)  # QAM16
         plt.plot(snr_axis[4, :], data_axis[4, :, 0:n_frames, n], '#0066FF', linewidth=1.0, antialiased=True)  # QAM64
         plt.plot(snr_axis[5, :], data_axis[5, :, 0:n_frames, n], 'k', linewidth=1.0, antialiased=True)  # Noise
-        plt.xlabel('SNR')
-        plt.ylabel('Feature Magnitude')
+        plt.xlabel('SNR [dB]')
+        plt.xticks(snr_axis[0, :], SNR_values.values())
+        plt.ylabel(features_names[n+1], rotation=0, fontsize=15, labelpad=20)
         BPSK_patch = mpatches.Patch(color='#2F8000', label='BPSK')
         QPSK_patch = mpatches.Patch(color='#DEAA0B', label='QPSK')
         PSK8_patch = mpatches.Patch(color='#FF3300', label='PSK8')
@@ -181,8 +188,9 @@ def errorbar_plot(snr_axis, mean, stddev, save=False):
         plt.errorbar(snr_axis[5, :],
                      mean[5, :, 0, n],
                      yerr=stddev[5, :, 0, n], color='k', linewidth=1.0)
-        plt.xlabel('SNR')
-        plt.ylabel('Feature Magnitude')
+        plt.xlabel('SNR [dB]')
+        plt.xticks(snr_axis[0, :], SNR_values.values())
+        plt.ylabel(features_names[n+1], rotation=0, fontsize=15, labelpad=20)
         # plt.title('Feature ' + str(n + 1) + ' - ' + features_names[n])
         plt.legend(signals)
         figure_name = pathlib.Path(join(os.getcwd(),

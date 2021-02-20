@@ -45,10 +45,10 @@ class HyperParameter:
             self.dropout = 0.4
             self.epochs = 10
             self.initializer = 'he_normal'
-            self.layer_size_hl1 = 7 * 4
-            self.layer_size_hl2 = 7 * 3
-            self.layer_size_hl3 = 7 * 2
-            self.learning_rate = 2e-3
+            self.layer_size_hl1 = 18
+            self.layer_size_hl2 = 18
+            self.layer_size_hl3 = 18
+            self.learning_rate = 1e-3
             self.optimizer = 'rmsprop'
         else:
             self.default = False
@@ -246,6 +246,8 @@ def evaluate_rna(evaluate_loaded_model):  # Make a prediction using some samples
             result[i][SNR] = accuracy
 
     accuracy_graphic(result)
+    save_dict = {'acc': result}
+    scipy.io.savemat(pathlib.Path(join(os.getcwd(), 'figures', loaded_model_id + '_figure_data' + '.mat')), save_dict)
 
     if not os.path.isfile(join(rna_folder, "weights-" + loaded_model_id + ".h5")):
         print("Weights file not found. Saving it into RNA folder")
@@ -256,14 +258,35 @@ def accuracy_graphic(result):
     # Then, it creates an accuracy graphic, containing the
     # prediction result to all snr values and all modulations
     plt.figure(figsize=(6, 3), dpi=300)
-    plt.title("Accuracy")
-    plt.ylabel("Right prediction")
+    plt.ylabel("Accuracy (%)")
     plt.xlabel("SNR [dB]")
     plt.xticks(np.arange(len(testing_SNR)), [SNR_values[i] for i in testing_SNR])
     for item in range(len(result)):
-        plt.plot(result[item], label=signals[item])
+        plt.plot(result[item]*100, label=signals[item])
     plt.legend(loc='best')
     plt.savefig(join(fig_folder, "accuracy-" + loaded_model_id + ".png"),
+                bbox_inches='tight', dpi=300)
+
+
+def confusion_matrix(input_model, input_model_id):
+    # Here we make a prediction using the test data...
+    print('\nStarting prediction')
+    predict = np.argmax(input_model.predict(X_test), axis=-1)
+
+    # And create a Confusion Matrix for a better visualization!
+    print('\nConfusion Matrix:')
+    confusion_matrix = tf.math.confusion_matrix(y_test, predict).numpy()
+    confusion_matrix_normalized = np.around(
+        confusion_matrix.astype('float') / confusion_matrix.sum(axis=1)[:, np.newaxis],
+        decimals=2)
+    print(confusion_matrix_normalized)
+    cm_data_frame = pd.DataFrame(confusion_matrix_normalized, index=signals, columns=signals)
+    figure = plt.figure(figsize=(8, 4), dpi=150)
+    sns.heatmap(cm_data_frame, annot=True, cmap=plt.cm.get_cmap('Blues', 6))
+    plt.tight_layout()
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+    plt.savefig(join(fig_folder, 'confusion_matrix-' + input_model_id + '_' + str(len(training_SNR)) + '.png'),
                 bbox_inches='tight', dpi=300)
 
 
@@ -379,8 +402,9 @@ def serial_communication():
     # Setup UART COM on Windows
     ser = serial.Serial(port='COM3', baudrate=115200, parity='N', bytesize=8, stopbits=1, timeout=1)
 
-    snr_range = np.linspace(0, 9, 10, dtype=np.int16)  # 2 4 6 8 10 12 14 16 18 20
-    frame_range = np.linspace(0, 500, 500, dtype=np.int16)
+    snr_range = [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
+    # snr_range = np.linspace(15, 0, 16, dtype=np.int16)  # 10 12 14 16 18 20
+    frame_range = np.linspace(0, 99, 100, dtype=np.int16)
 
     # Write to UART
     print('Transmitting Neural Network...')
@@ -448,10 +472,11 @@ def serial_communication():
                 i_values = functions.InstValues(parsed_signal[snr, frame, 0:frame_size])
                 ft = np.float32(features.calculate_features(parsed_signal[snr, frame, 0:frame_size]))
                 ft_scaled = (ft - np.float32(scaler.mean_)) / np.float32(scaler.scale_)
-                q_format = quantization.find_best_q_format(np.min(ft_scaled), np.max(ft_scaled))
+                q_format = info_dict["Input"]
                 q_ft = quantization.quantize_data(ft_scaled, q_format)
-                print('Scaled features: {}'.format(ft_scaled))
-                print('Quantized scaled features: {}'.format(q_ft))
+                print('Features: {}'.format(ft_scaled))
+                print('Features Q Format: ' + q_format)
+                print('Quantized features: {}'.format(q_ft))
                 print('Transmitting...')
                 for point in range(0, 2048):
                     binary = struct.pack('<f', np.real(parsed_signal[snr, frame, point]))
@@ -460,7 +485,7 @@ def serial_communication():
                     ser.write(binary)
 
                 received_list = []
-                for results in range(0, 8):
+                for results in range(1, 3):
                     num_array, counter_array, real, imag = receive_data(ser)
                     if results == 0:
                         err = False
@@ -479,20 +504,21 @@ def serial_communication():
                     else:
                         received_list.append([num_array, counter_array])
 
-                err_abs_vector.append(i_values.inst_abs.T - received_list[1][0])
-                print('Err abs: {}'.format(np.max(err_abs_vector)))
-                err_phase_vector.append(i_values.inst_phase.T - received_list[2][0])
-                print('Err phase: {}'.format(np.max(err_phase_vector)))
-                err_unwrapped_phase_vector.append(i_values.inst_unwrapped_phase.T - received_list[3][0])
-                print('Err unwrapped phase: {}'.format(np.max(err_unwrapped_phase_vector)))
-                err_freq_vector.append(i_values.inst_freq[0:frame_size - 1].T - received_list[4][0][0:frame_size - 1])
-                print('Err freq: {}'.format(np.max(err_freq_vector)))
-                err_cn_abs_vector.append(i_values.inst_cna.T - received_list[5][0])
-                print('Err CN abs: {}'.format(np.max(err_cn_abs_vector)))
-                err_features.append(ft - received_list[6][0])
+                # err_abs_vector.append(i_values.inst_abs.T - received_list[1][0])
+                # print('Err abs: {}'.format(np.max(err_abs_vector)))
+                # err_phase_vector.append(i_values.inst_phase.T - received_list[2][0])
+                # print('Err phase: {}'.format(np.max(err_phase_vector)))
+                # err_unwrapped_phase_vector.append(i_values.inst_unwrapped_phase.T - received_list[3][0])
+                # print('Err unwrapped phase: {}'.format(np.max(err_unwrapped_phase_vector)))
+                # err_freq_vector.append(i_values.inst_freq[0:frame_size - 1].T - received_list[4][0][0:frame_size - 1])
+                # print('Err freq: {}'.format(np.max(err_freq_vector)))
+                # err_cn_abs_vector.append(i_values.inst_cna.T - received_list[5][0])
+                # print('Err CN abs: {}'.format(np.max(err_cn_abs_vector)))
+                err_features.append(ft - received_list[0][0])
                 print('Err features: {}'.format(np.max(err_features)))
 
-                predictions.append(received_list[7][0])
+                predictions.append(received_list[1][0])
+                print(predictions)
                 correct = 0
                 for p in predictions:
                     if mod == 'BPSK' and p == (0.0,):
@@ -510,7 +536,7 @@ def serial_communication():
                     else:
                         correct += 0
 
-                print('Last prediction = {}'.format(received_list[2][0]))
+                print('Last prediction = {}'.format(received_list[1][0]))
                 print('Accuracy = {}'.format(correct * 100 / len(predictions)))
 
                 print('Wait...')
@@ -532,9 +558,11 @@ if __name__ == '__main__':
     data_mat = scipy.io.loadmat(mat_file_name)
     print(str(mat_file_name) + ' file loaded...')
 
-    training = False
+    training = True
 
     X_train, X_test, y_train, y_test, scaler = preprocess_data()
+    test_data = configure_data()
+    test_data = scaler.transform(test_data)
 
     if training:
         # Weights and biases parser
@@ -550,18 +578,20 @@ if __name__ == '__main__':
         parser.add_argument('--optimizer', action='store', dest='optimizer')
         args = parser.parse_args()
 
-        wandb.init(project="amcpy-team", config=HyperParameter(args).get_dict())
+        wandb.init(project="amcpy-team", config=HyperParameter(None).get_dict())
         config = wandb.config
         model_id = train_rna(config)
         loaded_model, loaded_model_id = get_model_from_id(model_id)
         evaluate_rna(loaded_model)
 
     if not training:
-        loaded_model, loaded_model_id = get_model_from_id('8202de58')
+        # loaded_model, loaded_model_id = get_model_from_id('e9a525d2')
+        loaded_model, loaded_model_id = get_model_from_id('5811ec2d')
         evaluate_rna(loaded_model)
-        load_dict, info_dict = quantization.quantize(loaded_model, np.concatenate((X_train, X_test)))
-        for info in info_dict:
-            print(info + ' -> ' + info_dict[info])
-        weights = load_dict['weights']
-        biases = load_dict['biases']
+        confusion_matrix(loaded_model, loaded_model_id)
+        # load_dict, info_dict = quantization.quantize(loaded_model, np.concatenate((X_train, X_test)))
+        # for info in info_dict:
+        #     print(info + ' -> ' + info_dict[info])
+        # weights = load_dict['weights']
+        # biases = load_dict['biases']
         # serial_communication()

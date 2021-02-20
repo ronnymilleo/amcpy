@@ -98,58 +98,61 @@ def quantize(model: tf.keras.Model, inputs):
     # Look for best Q number to represent each layer
     layer_dict = {}
     for n in range(len(max_w)):
-        key = "Layer {} weights".format(n)
+        key = "Layer {} weights".format(n+1)
         layer_dict[key] = find_best_q_format(min_w[n], max_w[n])
-        key = "Layer {} biases".format(n)
+        key = "Layer {} biases".format(n+1)
         layer_dict[key] = find_best_q_format(min_b[n], max_b[n])
 
+    # Print data input Q type
+    key = "Input"
+    layer_dict[key] = find_best_q_format(np.min(inputs), np.max(inputs))
     # Look for outputs of every layer
-    layer_outputs = []
-    layer_input = inputs
-    for dense_layer in d_layers:
-        layer_output = dense_layer(layer_input)
-        layer_outputs.append(layer_output)
-        layer_input = layer_output
-
-    # Get max and min for each layer output
     max_outs = []
-    min_outs = []
-    for tensor in layer_outputs:
-        max_outs.append(np.max(tensor[0]))
-        min_outs.append(np.min(tensor[0]))
+    out_1 = d_layers[0](inputs)
+    max_outs.append(np.max(out_1.numpy()))
+    out_2 = d_layers[1](out_1)
+    max_outs.append(np.max(out_2.numpy()))
+    out_3 = d_layers[2](out_2)
+    max_outs.append(np.max(out_3.numpy()))
+    out_4 = d_layers[3](out_3)
+    max_outs.append(np.max(out_4.numpy()))
+    out_5 = d_layers[4](out_4)
+    max_outs.append(np.max(out_5.numpy()))
 
     # Figure out the precise Q number format for each output
     for n in range(len(max_outs)):
-        key = "Layer {} outputs".format(n)
-        layer_dict[key] = find_best_q_format(min_outs[n], max_outs[n])
+        key = "Layer {} outputs".format(n+1)
+        layer_dict[key] = find_best_q_format(0, max_outs[n])
 
     quantized = []
     dequantized_w = []
     a = 0
     for n, dense_layer in enumerate(d_layers):
-        key = "Layer {} weights".format(n)
+        key = "Layer {} weights".format(n+1)
         q_w = layer_dict[key]
-        key = "Layer {} biases".format(n)
+        key = "Layer {} biases".format(n+1)
         q_b = layer_dict[key]
         quantized.append(quantize_rna(dense_layer.get_weights(), q_w, q_b))
         dequantized_w.append(dequantize_rna(quantized[a], q_w, q_b))
+        # quantized.append(quantize_rna(dense_layer.get_weights(), 'Q3.12', 'Q2.13'))
+        # dequantized_w.append(dequantize_rna(quantized[a], 'Q3.12', 'Q2.13'))
         error_w = get_quantization_error(dense_layer.get_weights()[0], dequantized_w[a][0])
-        print('Max error INPUT LAYER {} W: {}'.format(n, np.max(error_w)))
+        print('Max error INPUT LAYER {} W: {:.3}'.format(n, np.max(error_w)))
         error_b = get_quantization_error(dense_layer.get_weights()[1], dequantized_w[a][1])
-        print('Max error INPUT LAYER {} B: {}'.format(n, np.max(error_b)))
+        print('Max error INPUT LAYER {} B: {:.3}'.format(n, np.max(error_b)))
         a = a + 1
 
     # TODO: better flattening of matrices
     # Convert quantized weights into numpy arrays
-    l1 = np.reshape(quantized[0][0][0].numpy().T, (7 * 7,))
+    l1 = np.reshape(quantized[0][0][0].numpy().T, (6 * 6,))
     b1 = quantized[0][1][0].numpy()
-    l2 = np.reshape(quantized[1][0][0].numpy().T, (7 * 21,))
+    l2 = np.reshape(quantized[1][0][0].numpy().T, (6 * 26,))
     b2 = quantized[1][1][0].numpy()
-    l3 = np.reshape(quantized[2][0][0].numpy().T, (21 * 27,))
+    l3 = np.reshape(quantized[2][0][0].numpy().T, (26 * 29,))
     b3 = quantized[2][1][0].numpy()
-    l4 = np.reshape(quantized[3][0][0].numpy().T, (27 * 13,))
+    l4 = np.reshape(quantized[3][0][0].numpy().T, (29 * 30))
     b4 = quantized[3][1][0].numpy()
-    l5 = np.reshape(quantized[4][0][0].numpy().T, (13 * 6,))
+    l5 = np.reshape(quantized[4][0][0].numpy().T, (30 * 6,))
     b5 = quantized[4][1][0].numpy()
 
     weights = np.concatenate((l1, l2, l3, l4, l5))
