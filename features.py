@@ -9,7 +9,7 @@ from globals import *
 def calculate_features(signal_input):
     result = []
     for ft in used_features:
-        aux = eval(features_functions[ft])
+        aux = np.float32(eval(features_functions[ft]))
         result.append(aux)
     return result
 

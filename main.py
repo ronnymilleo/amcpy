@@ -10,7 +10,7 @@ from globals import *
 
 number_of_frames = number_of_testing_frames
 number_of_SNR = len(testing_SNR)
-features = np.zeros((number_of_SNR, number_of_frames, len(used_features)))
+features = np.zeros((number_of_SNR, number_of_frames, len(used_features)), dtype=np.float32)
 
 
 class Worker(Thread):
