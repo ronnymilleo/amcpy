@@ -9,7 +9,7 @@ import numpy as np
 import scipy.io
 import serial
 
-import features
+from old import features
 import functions
 
 
@@ -95,7 +95,7 @@ def receive_wandb(port, size):
 
 
 def serial_communication(weights, biases):
-    with open("./info.json") as handle:
+    with open("old/info.json") as handle:
         info_json = json.load(handle)
 
     modulations = info_json['modulations']['names']
@@ -107,9 +107,9 @@ def serial_communication(weights, biases):
     # Dictionary to access variable inside MAT file
     info = {'BPSK': 'signal_bpsk',
             'QPSK': 'signal_qpsk',
-            'PSK8': 'signal_8psk',
-            'QAM16': 'signal_qam16',
-            'QAM64': 'signal_qam64',
+            '8PSK': 'signal_8psk',
+            '16QAM': 'signal_qam16',
+            '64QAM': 'signal_qam64',
             'noise': 'signal_noise'}
 
     # Load MAT file and parse data

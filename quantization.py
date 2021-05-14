@@ -5,7 +5,10 @@ import numpy as np
 import scipy.io
 import tensorflow as tf
 
-from globals import arm_folder, q_range
+from main import arm_data_folder
+
+q_range = {}
+resolution = []
 
 
 def get_dense_layers(model: tf.keras.Model) -> tf.keras.layers:
@@ -17,6 +20,15 @@ def get_dense_layers(model: tf.keras.Model) -> tf.keras.layers:
         if "dense" in lyr.name:
             dense_layers.append(lyr)
     return dense_layers
+
+
+def define_range_and_precision():
+    # Calculate range of fixed point numbers #QM.N
+    for M in range(0, 7):
+        N = 15 - M
+        k = "Q{}.{}".format(M, N)
+        q_range[k] = ([-2 ** (M - 1), 2 ** (M - 1) - 2 ** (-N)])
+        resolution.append(2 ** (-N))
 
 
 def find_best_q_format(min_value, max_value):
@@ -158,5 +170,5 @@ def quantize(model: tf.keras.Model, inputs):
     weights = np.concatenate((l1, l2, l3, l4, l5))
     biases = np.concatenate((b1, b2, b3, b4, b5))
     save_dict = {'weights': weights, 'biases': biases}
-    scipy.io.savemat(pathlib.Path(join(arm_folder, 'w_and_b.mat')), save_dict)
+    scipy.io.savemat(pathlib.Path(join(arm_data_folder, 'w_and_b.mat')), save_dict)
     return save_dict, layer_dict

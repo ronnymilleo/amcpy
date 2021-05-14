@@ -29,7 +29,7 @@ def plot_time_gif(x, y, start, end, step):
 
 
 # CONFIG
-with open("./info.json") as handle:
+with open("old/info.json") as handle:
     info_json = json.load(handle)
 
 snr = 20
@@ -52,8 +52,8 @@ for modulation in modulations:
         info = {'BPSK': 'signal_bpsk',
                 'QPSK': 'signal_qpsk',
                 'PSK8': 'signal_8psk',
-                'QAM16': 'signal_qam16',
-                'QAM64': 'signal_qam64',
+                '16QAM': 'signal_qam16',
+                '64QAM': 'signal_qam64',
                 'noise': 'signal_noise'}
         data_mat = scipy.io.loadmat(file_name)
         print(str(file_name) + ' file loaded...')
