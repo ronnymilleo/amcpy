@@ -14,26 +14,26 @@ from keras.optimizers import RMSprop, Adam, Nadam
 from sklearn.metrics import accuracy_score
 from tensorflow.keras import Sequential
 from tensorflow.keras import regularizers
-from tensorflow.keras.layers import Dense, Dropout
+from tensorflow.keras.layers import Dense
 from tensorflow.keras.models import load_model
 from wandb.keras import WandbCallback
 
-import features
+from old import features
 import functions
 import quantization
 from preprocessing import *
 
-gpus = tf.config.list_physical_devices('GPU')
-if gpus:
-    try:
-        # Currently, memory growth needs to be the same across GPUs
-        for gpu in gpus:
-            tf.config.experimental.set_memory_growth(gpu, enable=True)
-        logical_gpus = tf.config.experimental.list_logical_devices('GPU')
-        print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPU")
-    except RuntimeError as e:
-        # Memory growth must be set before GPUs have been initialized
-        print(e)
+# gpus = tf.config.list_physical_devices('GPU')
+# if gpus:
+#     try:
+#         # Currently, memory growth needs to be the same across GPUs
+#         for gpu in gpus:
+#             tf.config.experimental.set_memory_growth(gpu, enable=True)
+#         logical_gpus = tf.config.experimental.list_logical_devices('GPU')
+#         print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPU")
+#     except RuntimeError as e:
+#         # Memory growth must be set before GPUs have been initialized
+#         print(e)
 
 
 class HyperParameter:
@@ -89,15 +89,15 @@ def create_model(cfg: HyperParameter) -> Sequential:  # Return sequential model
                     activation=cfg.activation,
                     kernel_regularizer=regularizers.l2(0.001)))
 
-    model.add(Dropout(cfg.dropout))
-    model.add(Dense(cfg.layer_size_hl2,
-                    activation=cfg.activation,
-                    kernel_regularizer=regularizers.l2(0.001)))
-
-    model.add(Dropout(cfg.dropout))
-    model.add(Dense(cfg.layer_size_hl3,
-                    activation=cfg.activation,
-                    kernel_regularizer=regularizers.l2(0.001)))
+    # model.add(Dropout(cfg.dropout))
+    # model.add(Dense(cfg.layer_size_hl2,
+    #                 activation=cfg.activation,
+    #                 kernel_regularizer=regularizers.l2(0.001)))
+    #
+    # model.add(Dropout(cfg.dropout))
+    # model.add(Dense(cfg.layer_size_hl3,
+    #                 activation=cfg.activation,
+    #                 kernel_regularizer=regularizers.l2(0.001)))
 
     # model.add(Dropout(cfg.dropout))
     model.add(Dense(len(signals),
@@ -156,7 +156,7 @@ def train_rna(cfg):
     # Execute code only if wandb is activated
     history = model.fit(X_train_tensor, y_train_tensor, batch_size=cfg.batch_size, epochs=cfg.epochs, verbose=2,
                         callbacks=[WandbCallback(validation_data=(X_test_tensor, y_test_tensor))],
-                        validation_data=(X_test_tensor, y_test_tensor))
+                        validation_data=(X_test_tensor, y_test_tensor), use_multiprocessing=True, workers=12)
 
     model.save(str(join(rna_folder, 'rna-' + new_id + '.h5')))
     model.save_weights(str(join(rna_folder, 'weights-' + new_id + '.h5')))
@@ -232,7 +232,7 @@ def evaluate_rna(evaluate_loaded_model):  # Make a prediction using some samples
     # For each modulation, randomly loads the test_size samples
     # and predict the result to all SNR values
     result = np.zeros((len(signals), len(testing_SNR)))
-    for i, mod in enumerate(testing_features_files):
+    for i, mod in enumerate(features_files):
         print("Evaluating {}".format(mod.split("_")[0]))
         data_dict = scipy.io.loadmat(join(data_folder, mod))
         data = data_dict[mat_info[mod.split("_")[0]]]
@@ -254,6 +254,18 @@ def evaluate_rna(evaluate_loaded_model):  # Make a prediction using some samples
         evaluate_loaded_model.save_weights(str(join(rna_folder, 'weights-' + loaded_model_id + '.h5')))
 
 
+def evaluate_ann():
+    n = number_of_testing_frames
+    result = np.zeros((len(signals), len(testing_SNR)))
+    for SNR, _ in enumerate(testing_SNR):
+        for i in range(0, len(signals)):
+            predict = np.argmax(loaded_model.predict(X_test_2[n * (i + SNR * len(signals)): n * (i + 1 + SNR * len(signals))]), axis=-1)
+            accuracy = accuracy_score(y_test_2[n * (i + SNR * len(signals)): n * (i + 1 + SNR * len(signals))], predict)
+            result[i][SNR] = accuracy
+    accuracy_graphic(result)
+    return result
+
+
 def accuracy_graphic(result):
     # Then, it creates an accuracy graphic, containing the
     # prediction result to all snr values and all modulations
@@ -271,14 +283,15 @@ def accuracy_graphic(result):
 def confusion_matrix(input_model, input_model_id):
     # Here we make a prediction using the test data...
     print('\nStarting prediction')
-    predict = np.argmax(input_model.predict(X_test), axis=-1)
+    predict = np.argmax(input_model.predict(X_test_2), axis=-1)
 
     # And create a Confusion Matrix for a better visualization!
     print('\nConfusion Matrix:')
-    confusion_matrix = tf.math.confusion_matrix(y_test, predict).numpy()
+    confusion_matrix = tf.math.confusion_matrix(y_test_2, predict).numpy()
     confusion_matrix_normalized = np.around(
         confusion_matrix.astype('float') / confusion_matrix.sum(axis=1)[:, np.newaxis],
         decimals=2)
+    print(confusion_matrix)
     print(confusion_matrix_normalized)
     cm_data_frame = pd.DataFrame(confusion_matrix_normalized, index=signals, columns=signals)
     figure = plt.figure(figsize=(8, 4), dpi=150)
@@ -525,11 +538,11 @@ def serial_communication():
                         correct += 1
                     elif mod == 'QPSK' and p == (1.0,):
                         correct += 1
-                    elif mod == 'PSK8' and p == (2.0,):
+                    elif mod == '8PSK' and p == (2.0,):
                         correct += 1
-                    elif mod == 'QAM16' and p == (3.0,):
+                    elif mod == '16QAM' and p == (3.0,):
                         correct += 1
-                    elif mod == 'QAM64' and p == (4.0,):
+                    elif mod == '64QAM' and p == (4.0,):
                         correct += 1
                     elif mod == 'noise' and p == (5.0,):
                         correct += 1
@@ -560,9 +573,9 @@ if __name__ == '__main__':
 
     training = True
 
-    X_train, X_test, y_train, y_test, scaler = preprocess_data()
-    test_data = configure_data()
-    test_data = scaler.transform(test_data)
+    X_train, X_test, y_train, y_test, scaler = preprocess_data('Training')
+    X_test_2, y_test_2 = configure_data()
+    X_test_2 = scaler.transform(X_test_2)
 
     if training:
         # Weights and biases parser
@@ -585,10 +598,10 @@ if __name__ == '__main__':
         evaluate_rna(loaded_model)
 
     if not training:
-        # loaded_model, loaded_model_id = get_model_from_id('e9a525d2')
-        loaded_model, loaded_model_id = get_model_from_id('5811ec2d')
-        evaluate_rna(loaded_model)
+        loaded_model, loaded_model_id = get_model_from_id('12e326ee')
+        evaluate_ann()
         confusion_matrix(loaded_model, loaded_model_id)
+
         # load_dict, info_dict = quantization.quantize(loaded_model, np.concatenate((X_train, X_test)))
         # for info in info_dict:
         #     print(info + ' -> ' + info_dict[info])

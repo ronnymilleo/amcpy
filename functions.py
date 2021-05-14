@@ -30,6 +30,50 @@ class MomentValues:
         self.m63 = np.mean(np.power(signal_input, 6 - 3) * np.power(np.conj(signal_input), 3))
 
 
+def calculate_features(features, signal_input):
+    result = []
+    temp = 0
+    for ft in features:
+        if ft == 1:
+            temp = gmax(signal_input)
+        if ft == 2:
+            temp = std_dev_abs_inst_phase(signal_input)
+        if ft == 3:
+            temp = std_dev_inst_phase(signal_input)
+        if ft == 4:
+            temp = std_dev_abs_inst_cna(signal_input)
+        if ft == 5:
+            temp = std_dev_abs_inst_cnf(signal_input)
+        if ft == 6:
+            temp = mean_of_signal_magnitude(signal_input)
+        if ft == 7:
+            temp = normalized_sqrt_of_sum_of_amp(signal_input)
+        if ft == 8:
+            temp = kurtosis_of_cn_amplitude(signal_input)
+        if ft == 9:
+            temp = kurtosis_of_cn_freq(signal_input)
+        if ft == 10:
+            temp = cumulant_20(signal_input)
+        if ft == 11:
+            temp = cumulant_21(signal_input)
+        if ft == 12:
+            temp = cumulant_40(signal_input)
+        if ft == 13:
+            temp = cumulant_41(signal_input)
+        if ft == 14:
+            temp = cumulant_42(signal_input)
+        if ft == 15:
+            temp = cumulant_60(signal_input)
+        if ft == 16:
+            temp = cumulant_61(signal_input)
+        if ft == 17:
+            temp = cumulant_62(signal_input)
+        if ft == 18:
+            temp = cumulant_63(signal_input)
+        result.append(temp)
+    return result
+
+
 # 1 - Gmax
 def gmax(signal_input):
     ft_output = np.max(np.power(np.abs(np.fft.fft(signal_input)), 2) / len(signal_input))

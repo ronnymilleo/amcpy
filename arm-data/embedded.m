@@ -39,6 +39,7 @@ plot(SNR_axis, flip(qam16_counter), 'Color', '#AD00E6', 'LineWidth', 2)
 plot(SNR_axis, flip(qam64_counter), 'Color', '#0066FF', 'LineWidth', 2)
 plot(SNR_axis, flip(noise_counter), 'k', 'LineWidth', 2)
 hold off
+axis([-10 20 -2 102])
 xlabel('SNR (dB)')
 xticks(SNR_axis)
 ylabel('Accuracy (%)')

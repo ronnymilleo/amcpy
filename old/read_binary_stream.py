@@ -7,7 +7,7 @@ from os.path import join
 import numpy as np
 from termcolor import colored
 
-with open("../info.json") as handle:
+with open("info.json") as handle:
     info_json = json.load(handle)
 
 modulations = info_json['modulations']['names']
