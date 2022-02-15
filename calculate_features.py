@@ -1,15 +1,12 @@
-import os
-import pathlib
 import time
 from multiprocessing import Process
-from os.path import join
 from queue import Queue
 from threading import Thread
 
 import scipy.io
 
 import functions
-from globals import mat_info, num_threads, used_features, features_matrix, frame_size, signals
+from globals import *
 
 
 class Worker(Thread):
@@ -30,10 +27,8 @@ class Worker(Thread):
 def modulation_process(modulation: str):
     print('Starting new process...')
 
-    # Filename setup
-    mat_file_name = pathlib.Path(join(os.getcwd(), 'mat-data', 'all_modulations.mat'))
-
     # Load MAT file
+    mat_file_name = matlab_data_folder.joinpath(matlab_data_filename).__str__()
     data_mat = scipy.io.loadmat(mat_file_name)
     print(str(mat_file_name) + ' file loaded...')
     parsed_signal = data_mat[mat_info[modulation]]
@@ -41,7 +36,7 @@ def modulation_process(modulation: str):
     # Threads setup
     queue = Queue()
 
-    for x in range(num_threads):
+    for _ in range(num_threads):
         worker = Worker(queue)
         # Setting daemon to True will let the main thread exit even though the workers are blocking
         worker.daemon = True
@@ -49,25 +44,27 @@ def modulation_process(modulation: str):
         print('Starting new thread...')
 
     # Calculate features
-    for snr in range(len(features_matrix)):  # Every snr
-        for frame in range(len(features_matrix[0])):  # of every frame will be at the Queue waiting to be calculated
+    for snr in range(0, number_of_snr):  # Do it for every SNR
+        for frame in range(0, number_of_frames):  # of every frame
             queue.put([parsed_signal[snr, frame, 0:frame_size], snr, frame])  # Run!
     queue.join()  # This is the line that synchronizes everything
     print('Features calculated...')
 
     # Save the samples in a mat file
     save_dict = {'Modulation': modulation, mat_info[modulation]: features_matrix}
-    scipy.io.savemat(pathlib.Path(join(os.getcwd(), 'calculated-features', modulation + '_features.mat')), save_dict)
-    print('Process time in seconds: {0}'.format(time.process_time()))  # Horses benchmark!
+    scipy.io.savemat(calculated_features_folder.joinpath(modulation + '_features.mat'), save_dict)
+    print('Process time in seconds: {0}'.format(time.process_time()))  # Workers benchmark!
     print('Done.')
 
 
 def run():
     processes = []
-    for mod in signals.values():  # Create a process for each modulation (6 processes)
+    for mod in modulation_signals_dict.values():  # Create a process for each modulation + noise (6 processes)
         new_process = Process(target=modulation_process, args=(mod,))
         processes.append(new_process)
 
-    for i in range(len(signals)):
+    for i in range(0, len(modulation_signals_dict)):
         processes[i].start()
         processes[i].join()
+
+    print('Features calculations done!')
