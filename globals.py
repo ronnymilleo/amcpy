@@ -48,12 +48,7 @@ num_threads = 8
 # This is the definition of the modulations used in the project as a list and a dictionary
 # The list is used to plot, noise is not plotted
 modulation_signals = ['BPSK', 'QPSK', '8PSK', '16QAM', '64QAM']
-modulation_signals_dict = {0: 'BPSK',
-                           1: 'QPSK',
-                           2: '8PSK',
-                           3: '16QAM',
-                           4: '64QAM',
-                           5: 'wgn'}
+modulation_signals_with_noise = ['BPSK', 'QPSK', '8PSK', '16QAM', '64QAM', 'WGN']
 
 # Definition of the SNR dictionary
 snr_values = {0: '-10',
@@ -114,10 +109,12 @@ for feature in used_features:
 features_matrix = np.zeros((number_of_snr, number_of_frames, len(used_features)), dtype=np.float32)
 
 # Neural networks
-features_files = [f + "_features" for f in modulation_signals_dict.values()]
-plotting_snr = np.linspace(0, 15, 16)
-training_snr = np.linspace(10, 15, 6)
-testing_snr = np.linspace(0, 15, 16)
+features_files = [f + "_features" for f in modulation_signals_with_noise]
+
+# The neural networks performs better if you train using higher SNR values
+training_snr = np.linspace(10, 15, 6, dtype=int)
+all_available_snr = np.linspace(0, 15, 16, dtype=int)
+plotting_snr = all_available_snr
 
 # Dictionary to access variables inside MAT file
 mat_info = {'BPSK': 'signal_bpsk',
@@ -125,4 +122,4 @@ mat_info = {'BPSK': 'signal_bpsk',
             '8PSK': 'signal_8psk',
             '16QAM': 'signal_qam16',
             '64QAM': 'signal_qam64',
-            'wgn': 'signal_noise'}
+            'WGN': 'signal_noise'}

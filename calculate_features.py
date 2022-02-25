@@ -59,11 +59,11 @@ def modulation_process(modulation: str):
 
 def run():
     processes = []
-    for mod in modulation_signals_dict.values():  # Create a process for each modulation + noise (6 processes)
+    for mod in modulation_signals_with_noise:  # Create a process for each modulation + noise (6 processes)
         new_process = Process(target=modulation_process, args=(mod,))
         processes.append(new_process)
 
-    for i in range(0, len(modulation_signals_dict)):
+    for i in range(0, len(modulation_signals_with_noise)):
         processes[i].start()
         processes[i].join()
 
