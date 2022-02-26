@@ -44,4 +44,4 @@ parameters:
     distribution: categorical
     values:
       - rmsprop
-program: nn_v2.py
+program: main.py

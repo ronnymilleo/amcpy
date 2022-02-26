@@ -14,7 +14,7 @@ def preprocess_data(dataset: str):
 
     number_of_samples = number_of_frames * len(snr_axis) * len(modulation_signals_with_noise)
     x = np.zeros((number_of_samples, len(used_features)))  # x is the known variable used for input (features)
-    y = np.zeros((number_of_samples, len(used_features)))  # y is the known variable used for output (labels)
+    y = np.zeros(number_of_samples, )  # y is the known variable used for output (labels)
 
     for modulation_number, modulation in enumerate(features_files):  # Modulation + noise
         print("Processing {} data".format(modulation.split("_")[0]))  # Split the word 'features' from modulation file
@@ -26,9 +26,14 @@ def preprocess_data(dataset: str):
         # Put all features, from all SNR and all frames in the same matrix
         for snr in snr_axis:
             for frame in range(0, number_of_frames):
-                x[index, :] = np.float32(data[snr][frame][:])  # [SNR][frames][features] 32 bits
-                y[index, :] = modulation_number
+                x[index, :] = np.float32(data[snr][frame][used_features])  # [SNR][frames][features] 32 bits
                 index += 1
+
+        # Map every group of 18 features to a modulation result
+        start = modulation_number * number_of_frames * len(snr_axis)
+        end = start + number_of_frames * len(snr_axis)
+        for i in range(start, end):
+            y[i] = modulation_number
 
     # Instantiate StandardScaler
     scaler = StandardScaler()
@@ -62,7 +67,11 @@ def reshape_data():
         for snr in all_available_snr:
             for frame in range(0, number_of_frames):
                 x[index, :] = np.float32(data[snr][frame][:])  # [SNR][frames][features] 32 bits
-                y[index, :] = modulation_number
-                index += 1
+
+        # Map every group of 18 features to a modulation result
+        start = modulation_number * number_of_frames * len(all_available_snr)
+        end = start + number_of_frames * len(all_available_snr)
+        for i in range(start, end):
+            y[i] = modulation_number
 
     return x, y

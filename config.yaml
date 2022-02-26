@@ -1,0 +1,55 @@
+wandb_version: 1
+
+_wandb:
+  desc: null
+  value:
+    cli_version: 0.10.14
+    framework: keras
+    is_jupyter_run: false
+    is_kaggle_kernel: false
+    python_version: 3.8.6
+    t:
+      1:
+      - 2
+      - 3
+      - 5
+      2:
+      - 2
+      - 3
+      - 5
+      3:
+      - 3
+      4: 3.8.6
+      5: 0.10.14
+      8:
+      - 3
+activation:
+  desc: null
+  value: relu
+batch_size:
+  desc: null
+  value: 128
+dropout:
+  desc: null
+  value: 0.4
+epochs:
+  desc: null
+  value: 21
+initializer:
+  desc: null
+  value: he_normal
+layer_size_hl1:
+  desc: null
+  value: 26
+layer_size_hl2:
+  desc: null
+  value: 29
+layer_size_hl3:
+  desc: null
+  value: 30
+learning_rate:
+  desc: null
+  value: 0.001418378071933655
+optimizer:
+  desc: null
+  value: rmsprop

@@ -1,19 +1,15 @@
-import json
-import os
-import pathlib
 import struct
 import time
-from os.path import join
 
-import numpy as np
 import scipy.io
 import serial
 
-from old import features
 import functions
+import quantization
+from globals import *
 
 
-def receive_data(port: serial.Serial(), frameSize) -> (float, int):
+def receive_data(port: serial.Serial()) -> (float, int):
     # print('Receiving data...')
     data = []
     real = np.zeros((2048,), dtype=np.float32)
@@ -31,9 +27,9 @@ def receive_data(port: serial.Serial(), frameSize) -> (float, int):
             data.append(a)
 
     # print('Data length: {}'.format(len(data)))
-    if len(data) == 44:
-        num_array = np.zeros((22,), dtype=np.float32)
-        counter_array = np.zeros((22,), dtype=np.int32)
+    if len(data) == len(used_features) * 2:
+        num_array = np.zeros((len(used_features),), dtype=np.float32)
+        counter_array = np.zeros((len(used_features),), dtype=np.int32)
     else:
         num_array = np.zeros((len(data) - 1,), dtype=np.float32)
         counter_array = np.zeros((1,), dtype=np.int32)
@@ -42,26 +38,26 @@ def receive_data(port: serial.Serial(), frameSize) -> (float, int):
         new_data = b''.join(data)
         num_array = struct.unpack('<f', new_data[0:4])
         counter_array = struct.unpack('<i', new_data[4:8])
-    elif len(data) == 44:  # Features and counters
+    elif len(data) == len(used_features) * 2:  # Features and counters
         print('Features')
         new_data = b''.join(data)
-        for x in range(0, 22):
+        for x in range(0, len(used_features)):
             aux = struct.unpack('<f', new_data[x * 4:x * 4 + 4])
             num_array[x] = aux[0]
-        for x in range(22, 44):
+        for x in range(len(used_features), len(used_features) * 2):
             aux = struct.unpack('<i', new_data[x * 4:x * 4 + 4])
-            counter_array[x - 22] = aux[0]
-    elif len(data) == frameSize + 1:  # Data
+            counter_array[x - len(used_features)] = aux[0]
+    elif len(data) == frame_size + 1:  # Data
         print('Inst values')
         new_data = b''.join(data)
-        for x in range(0, frameSize):
+        for x in range(0, frame_size):
             aux = struct.unpack('<f', new_data[x * 4:x * 4 + 4])
             num_array[x] = aux[0]
-        counter_array = struct.unpack('<i', new_data[frameSize * 4:frameSize * 4 + 4])
-    elif len(data) > frameSize + 1:  # Echo
+        counter_array = struct.unpack('<i', new_data[frame_size * 4:frame_size * 4 + 4])
+    elif len(data) > frame_size + 1:  # Echo
         print('Echo')
         new_data = b''.join(data)
-        for x in range(0, frameSize * 8, 8):
+        for x in range(0, frame_size * 8, 8):
             r = struct.unpack('<f', new_data[x:x + 4])
             i = struct.unpack('<f', new_data[x + 4:x + 8])
             real[x // 8] = r[0]
@@ -94,61 +90,89 @@ def receive_wandb(port, size):
     return np_array
 
 
-def serial_communication(weights, biases):
-    with open("old/info.json") as handle:
-        info_json = json.load(handle)
+def receive_scaler(port, size):
+    # print('Receiving data...')
+    data = []
+    np_array = np.zeros((size,), dtype=np.float32)
+    start = 0
+    while True:
+        a = port.read(size=4)
+        if a == b'\xCA\xCA\xCA\xCA':
+            # print('Head')
+            start = 1
+        elif a == b'\xF0\xF0\xF0\xF0':
+            # print('Tail')
+            break
+        elif start == 1:
+            data.append(a)
 
-    modulations = info_json['modulations']['names']
-    frameSize = info_json['frameSize']
+    new_data = b''.join(data)
+    for x in range(0, len(used_features)):
+        aux = struct.unpack('<f', new_data[x * 4:x * 4 + 4])
+        np_array[x] = aux[0]
+    for x in range(len(used_features), len(used_features) * 2):
+        aux = struct.unpack('<f', new_data[x * 4:x * 4 + 4])
+        np_array[x] = aux[0]
 
-    # Filename setup
-    mat_file_name = pathlib.Path(join(os.getcwd(), 'mat-data', 'all_modulations_data.mat'))
+    return np_array
 
-    # Dictionary to access variable inside MAT file
-    info = {'BPSK': 'signal_bpsk',
-            'QPSK': 'signal_qpsk',
-            '8PSK': 'signal_8psk',
-            '16QAM': 'signal_qam16',
-            '64QAM': 'signal_qam64',
-            'noise': 'signal_noise'}
 
-    # Load MAT file and parse data
-    data_mat = scipy.io.loadmat(mat_file_name)
-    print(str(mat_file_name) + ' file loaded...')
-
+def serial_communication(weights, biases, scaler, info_dict):
     # Setup UART COM on Windows
     ser = serial.Serial(port='COM3', baudrate=115200, parity='N', bytesize=8, stopbits=1, timeout=1)
 
-    snr_range = np.linspace(11, 15, 5, dtype=np.int16)  # 12 14 16 18 20
-    frame_range = np.linspace(0, 4, 5, dtype=np.int16)
+    snr_range = [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
+    # snr_range = np.linspace(15, 0, 16, dtype=np.int16)  # 10 12 14 16 18 20
+    frame_range = np.linspace(0, 99, 100, dtype=np.int16)
 
     # Write to UART
     print('Transmitting Neural Network...')
-    for point in range(0, 1700):
+    for point in range(0, len(weights)):
         binary = struct.pack('<h', weights[point])
         ser.write(binary)
-    for point in range(0, 82):
+    for point in range(0, len(biases)):
         binary = struct.pack('<h', biases[point])
         ser.write(binary)
 
-    received_wandb = receive_wandb(ser, 1782)
-
-    err_weights = received_wandb[0:1700] - weights
+    received_wandb = receive_wandb(ser, len(weights) + len(biases))
+    err_weights = received_wandb[0:len(weights)] - weights
     if np.max(err_weights) == 0:
         print('Weights loaded successfully')
+        print(weights)
     else:
         print('Error loading weights')
-    err_biases = received_wandb[1700:1782] - biases
+    err_biases = received_wandb[len(weights):len(weights) + len(biases)] - biases
     if np.max(err_biases) == 0:
         print('Biases loaded successfully')
+        print(biases)
     else:
         print('Error loading biases')
 
     print('Wait...')
     time.sleep(3)
-    print('Starting modulation signals transmission!')
 
-    for mod in modulations:
+    print('Transmit scaler for Standardization')
+    # Write to UART
+    for point in range(0, len(used_features)):
+        binary = struct.pack('<f', np.float32(scaler.mean_[point]))
+        ser.write(binary)
+    for point in range(0, len(used_features)):
+        binary = struct.pack('<f', np.float32(scaler.scale_[point]))
+        ser.write(binary)
+
+    received_scaler = receive_scaler(ser, len(used_features) * 2)
+    err_scaler = received_scaler - np.concatenate((np.float32(scaler.mean_), np.float32(scaler.scale_)))
+    if np.max(err_scaler) == 0:
+        print('Scaler loaded successfully')
+        print(received_scaler)
+    else:
+        print('Error loading scaler')
+
+    print('Wait...')
+    time.sleep(3)
+
+    print('Starting modulation signals transmission!')
+    for mod in modulation_signals_with_noise:
         # Create error information arrays and features results from microcontroller
         err_abs_vector = []
         err_phase_vector = []
@@ -158,15 +182,28 @@ def serial_communication(weights, biases):
         err_features = []
         predictions = []
         gathered_data = []
-        parsed_signal = data_mat[info[mod]]
-        print('Modulation = ' + mod)
+
+        # Filename setup
+        mat_file_name = pathlib.Path(join(os.getcwd(), 'mat-data', 'all_modulations.mat'))
+
+        # Load MAT file and parse data
+        data_mat = scipy.io.loadmat(mat_file_name.__str__())
+
+        print(str(mat_file_name) + ' file loaded...')
+        parsed_signal = data_mat[mat_info[mod]]
         for snr in snr_range:
-            print('SNR = {}'.format(snr))
             for frame in frame_range:
+                print('Modulation = ' + mod)
+                print('SNR = {}'.format(snr))
                 print('Frame = {}'.format(frame))
-                i_values = functions.InstValues(parsed_signal[snr, frame, 0:frameSize])
-                ft = np.float32(features.calculate_features(parsed_signal[snr, frame, 0:frameSize]))
-                # Write to UART
+                i_values = functions.InstValues(parsed_signal[snr, frame, 0:frame_size])
+                ft = np.float32(functions.calculate_features(used_features, parsed_signal[snr, frame, 0:frame_size]))
+                ft_scaled = (ft - np.float32(scaler.mean_)) / np.float32(scaler.scale_)
+                q_format = info_dict["Input"]
+                q_ft = quantization.quantize_data(ft_scaled, q_format)
+                print('Features: {}'.format(ft_scaled))
+                print('Features Q Format: ' + q_format)
+                print('Quantized features: {}'.format(q_ft))
                 print('Transmitting...')
                 for point in range(0, 2048):
                     binary = struct.pack('<f', np.real(parsed_signal[snr, frame, point]))
@@ -176,7 +213,7 @@ def serial_communication(weights, biases):
 
                 received_list = []
                 for results in range(1, 3):
-                    num_array, counter_array, real, imag = receive_data(ser, frameSize)
+                    num_array, counter_array, real, imag = receive_data(ser)
                     if results == 0:
                         err = False
                         for n in range(0, 2048):
@@ -195,62 +232,46 @@ def serial_communication(weights, biases):
                         received_list.append([num_array, counter_array])
 
                 # err_abs_vector.append(i_values.inst_abs.T - received_list[1][0])
-                # print('Inst absolute max error: {:.3}'.format(np.max(np.abs(err_abs_vector))))
-                # print('Calc time in clock cycles: {}'.format(received_list[1][1][0]))
-                # print('Calc time in ms: {:.3}'.format(received_list[1][1][0] / 200000))
-                #
+                # print('Err abs: {}'.format(np.max(err_abs_vector)))
                 # err_phase_vector.append(i_values.inst_phase.T - received_list[2][0])
-                # print('Inst phase max error: {:.3}'.format(np.max(np.abs(err_phase_vector))))
-                # print('Calc time in clock cycles: {}'.format(received_list[2][1][0]))
-                # print('Calc time in ms: {:.3}'.format(received_list[2][1][0] / 200000))
-                #
+                # print('Err phase: {}'.format(np.max(err_phase_vector)))
                 # err_unwrapped_phase_vector.append(i_values.inst_unwrapped_phase.T - received_list[3][0])
-                # print('Inst unwrapped phase max error: {:.3}'.format(np.max(np.abs(err_unwrapped_phase_vector))))
-                # print('Calc time in clock cycles: {}'.format(received_list[3][1][0]))
-                # print('Calc time in ms: {:.3}'.format(received_list[3][1][0] / 200000))
-                #
-                # err_freq_vector.append(i_values.inst_freq[0:frameSize - 1].T - received_list[4][0][0:frameSize - 1])
-                # print('Inst frequency max error: {:.3}'.format(np.max(np.abs(err_freq_vector))))
-                # print('Calc time in clock cycles: {}'.format(received_list[4][1][0]))
-                # print('Calc time in ms: {:.3}'.format(received_list[4][1][0] / 200000))
-                #
+                # print('Err unwrapped phase: {}'.format(np.max(err_unwrapped_phase_vector)))
+                # err_freq_vector.append(i_values.inst_freq[0:frame_size - 1].T - received_list[4][0][0:frame_size - 1])
+                # print('Err freq: {}'.format(np.max(err_freq_vector)))
                 # err_cn_abs_vector.append(i_values.inst_cna.T - received_list[5][0])
-                # print('Inst CN amplitude max error: {:.3}'.format(np.max(np.abs(err_cn_abs_vector))))
-                # print('Calc time in clock cycles: {}'.format(received_list[5][1][0]))
-                # print('Calc time in ms: {:.3}'.format(received_list[5][1][0] / 200000))
-
-                # err_features.append(ft - received_list[6][0])
-                # print('Error list: {}'.format(err_features))
-                # print('Timings list: {}'.format(received_list[6][1]))
-                # print('Timings list (ms): {}'.format(received_list[6][1] / 200000))
-
+                # print('Err CN abs: {}'.format(np.max(err_cn_abs_vector)))
                 err_features.append(ft - received_list[0][0])
-                print('Error list: {}'.format(err_features))
-                print('Timings list: {}'.format(received_list[0][1]))
-                print('Timings list (ms): {}'.format(received_list[0][1] / 200000))
-
-                # predictions.append(info[mod] - received_list[7][0])
-                # print('Predictions for ' + mod + ': {}'.format(predictions))
+                print('Err features: {}'.format(np.max(err_features)))
 
                 predictions.append(received_list[1][0])
-                print('Predictions for ' + mod + ': {}'.format(predictions))
+                print(predictions)
+                correct = 0
+                for p in predictions:
+                    if mod == 'BPSK' and p == (0.0,):
+                        correct += 1
+                    elif mod == 'QPSK' and p == (1.0,):
+                        correct += 1
+                    elif mod == '8PSK' and p == (2.0,):
+                        correct += 1
+                    elif mod == '16QAM' and p == (3.0,):
+                        correct += 1
+                    elif mod == '64QAM' and p == (4.0,):
+                        correct += 1
+                    elif mod == 'noise' and p == (5.0,):
+                        correct += 1
+                    else:
+                        correct += 0
+
+                print('Last prediction = {}'.format(received_list[1][0]))
+                print('Accuracy = {}'.format(correct * 100 / len(predictions)))
+
                 print('Wait...')
                 gathered_data.append(received_list)
-                save_dict = {'Modulation': mod, 'SNR': snr, 'Frame': frame,
-                             'Data': received_list, 'inst_values': i_values,
-                             'features': ft}
-                file_name = mod + '_' + str(snr) + '_' + str(frame) + '.mat'
-                scipy.io.savemat(pathlib.Path(join(os.getcwd(), 'arm-data', file_name)), save_dict)
-                time.sleep(3)
+                time.sleep(2.5)
 
         save_dict = {'Data': gathered_data, 'err_abs_vector': err_abs_vector, 'err_phase_vector': err_phase_vector,
                      'err_unwrapped_phase_vector': err_unwrapped_phase_vector, 'err_freq_vector': err_freq_vector,
                      'err_cn_abs_vector': err_cn_abs_vector, 'err_features': err_features, 'snr_range': snr_range,
-                     'frame_range': frame_range, 'modulation': mod}
+                     'frame_range': frame_range, 'modulation': mod, 'predictions': predictions}
         scipy.io.savemat(pathlib.Path(join(os.getcwd(), 'arm-data', mod + '.mat')), save_dict)
-
-
-if __name__ == '__main__':
-    w = np.zeros((1700,), dtype=np.int16)
-    b = np.zeros((82,), dtype=np.int16)
-    serial_communication(w, b)
