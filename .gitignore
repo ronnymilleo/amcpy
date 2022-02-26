@@ -5,6 +5,7 @@
 /mat-data/
 /old/
 /venv/
+/wandb/
 sweep.yaml
 .idea/
 __pycache__/

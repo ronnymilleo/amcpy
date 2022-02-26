@@ -49,6 +49,7 @@ num_threads = 8
 # The list is used to plot, noise is not plotted
 modulation_signals = ['BPSK', 'QPSK', '8PSK', '16QAM', '64QAM']
 modulation_signals_with_noise = ['BPSK', 'QPSK', '8PSK', '16QAM', '64QAM', 'WGN']
+modulation_signals_labels = [0, 1, 2, 3, 4, 5]
 
 # Definition of the SNR dictionary
 snr_values = {0: '-10',
@@ -100,7 +101,8 @@ features_names = {
 }
 
 # Collection of used features, since all features researched are implemented we want to select which will be used
-used_features = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
+# used_features = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]  # All features
+used_features = [2, 4, 6, 8, 12, 14]
 used_features_names = []
 for feature in used_features:
     used_features_names.append(features_names[feature])
