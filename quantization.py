@@ -5,7 +5,7 @@ import numpy as np
 import scipy.io
 import tensorflow as tf
 
-from main import arm_data_folder
+from globals import arm_data_folder
 
 q_range = {}
 resolution = []
@@ -110,9 +110,9 @@ def quantize(model: tf.keras.Model, inputs):
     # Look for best Q number to represent each layer
     layer_dict = {}
     for n in range(len(max_w)):
-        key = "Layer {} weights".format(n+1)
+        key = "Layer {} weights".format(n + 1)
         layer_dict[key] = find_best_q_format(min_w[n], max_w[n])
-        key = "Layer {} biases".format(n+1)
+        key = "Layer {} biases".format(n + 1)
         layer_dict[key] = find_best_q_format(min_b[n], max_b[n])
 
     # Print data input Q type
@@ -133,16 +133,16 @@ def quantize(model: tf.keras.Model, inputs):
 
     # Figure out the precise Q number format for each output
     for n in range(len(max_outs)):
-        key = "Layer {} outputs".format(n+1)
+        key = "Layer {} outputs".format(n + 1)
         layer_dict[key] = find_best_q_format(0, max_outs[n])
 
     quantized = []
     dequantized_w = []
     a = 0
     for n, dense_layer in enumerate(d_layers):
-        key = "Layer {} weights".format(n+1)
+        key = "Layer {} weights".format(n + 1)
         q_w = layer_dict[key]
-        key = "Layer {} biases".format(n+1)
+        key = "Layer {} biases".format(n + 1)
         q_b = layer_dict[key]
         quantized.append(quantize_rna(dense_layer.get_weights(), q_w, q_b))
         dequantized_w.append(dequantize_rna(quantized[a], q_w, q_b))

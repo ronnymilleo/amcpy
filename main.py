@@ -1,9 +1,11 @@
 import argparse
 
 import numpy as np
-import wandb
 
+import calculate_features
+import graphics
 import quantization
+import wandb
 from neural_network import NNConfig, get_model_from_id, confusion_matrix, evaluate_nn
 from preprocessing import preprocess_data
 from serial_comm import serial_communication
@@ -12,12 +14,12 @@ from serial_comm import serial_communication
 # If you get any errors, try running those lines
 if __name__ == '__main__':
     # Are you training or testing?
-    training = False
+    training = True
     # In case you're using a microcontroller
     use_microcontroller = False
 
-    # calculate_features.run()
-    # graphics.plot()
+    calculate_features.run()
+    graphics.plot()
 
     # Weights and biases configuration
     if training:
@@ -36,7 +38,7 @@ if __name__ == '__main__':
         parser.add_argument('--optimizer', action='store', dest='optimizer')
         args = parser.parse_args()
 
-        neuralnet = NNConfig(None)
+        neuralnet = NNConfig(args)
         wandb.init(project="amcpy-team", config=neuralnet.get_dict())
         config = wandb.config
         model_id = neuralnet.train(x_train, x_test, y_train, y_test)

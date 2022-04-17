@@ -19,7 +19,7 @@ class Worker(Thread):
             # Get the work from the queue and expand the tuple
             item = self.queue.get()
             try:
-                features_matrix[item[1], item[2], :] = functions.calculate_features(used_features, item[0])
+                features_matrix[item[1], item[2], :] = functions.calculate_features(all_features, item[0])
             finally:
                 self.queue.task_done()
 
