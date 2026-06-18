@@ -1,0 +1,66 @@
+[build-system]
+requires = ["setuptools>=75", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "amcpy"
+version = "2.0.0"
+description = "Automatic Modulation Classification in Python"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+authors = [
+    { name = "Ronny", email = "ronnysrmilleo@gmail.com" },
+]
+keywords = [
+    "signal-processing",
+    "modulation-classification",
+    "deep-learning",
+    "software-defined-radio",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+dependencies = [
+    "matplotlib>=3.5",
+    "numpy>=1.22",
+    "pandas>=1.4",
+    "plotly>=5.7",
+    "pyserial>=3.5",
+    "pyyaml>=6.0",
+    "scikit-learn>=1.0",
+    "scipy>=1.8",
+    "seaborn>=0.11",
+    "torch>=2.0",
+    "torchvision>=0.15",
+    "wandb>=0.15",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+]
+
+[project.scripts]
+amcpy = "amcpy.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["amcpy*"]
+
+[tool.pytest.ini_options]
+testpaths = ["src/amcpy"]
+python_files = ["test_*.py", "*_test.py", "features.py"]
+python_functions = ["test_*"]
